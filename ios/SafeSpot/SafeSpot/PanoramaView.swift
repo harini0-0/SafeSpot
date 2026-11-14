@@ -17,11 +17,13 @@ final class PanoramaModel {
     let sphere = ModelEntity()
 
     let roomTypeById: [String: String]
+    let graph: HouseGraph
 
     init(house: LoadedHouse) {
         let all = house.model.sections.panoramas?.panoLocations ?? []
         panos = all.sorted { (Int($0.label ?? "") ?? 0) < (Int($1.label ?? "") ?? 0) }
         roomTypeById = Dictionary(uniqueKeysWithValues: house.graph.rooms.map { ($0.id, $0.type) })
+        graph = house.graph
         camera.camera.fieldOfViewInDegrees = 75
         // Big inward-facing sphere; negative x scale shows the texture from the inside.
         sphere.components.set(ModelComponent(mesh: .generateSphere(radius: 50), materials: []))
@@ -63,6 +65,7 @@ struct PanoramaView: View {
     @State private var model: PanoramaModel?
     @State private var lastLook: CGSize = .zero
     @State private var status = "Loading…"
+    @State private var fade: Double = 0
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -89,6 +92,29 @@ struct PanoramaView: View {
                     }
                     .onEnded { _ in lastLook = .zero }
             )
+
+            // Cross-fade overlay while swapping panoramas.
+            Color.black.opacity(fade).ignoresSafeArea().allowsHitTesting(false)
+
+            // Minimap: tap a dot to move there.
+            if let m = model {
+                VStack {
+                    HStack {
+                        Spacer()
+                        Minimap(graph: m.graph, panos: m.panos, currentIndex: m.index) { i in
+                            guard i != m.index else { return }
+                            m.index = i
+                            Task { await load(m, index: i) }
+                        }
+                        .frame(width: 180, height: 140)
+                        .padding(8)
+                        .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 10))
+                        .padding(.trailing, 10)
+                        .padding(.top, 110)
+                    }
+                    Spacer()
+                }
+            }
 
             VStack(spacing: 12) {
                 Text(status)
@@ -119,17 +145,80 @@ struct PanoramaView: View {
 
     private func load(_ m: PanoramaModel, index: Int) async {
         guard let pano = m.current else { return }
+        withAnimation(.easeIn(duration: 0.15)) { fade = 1 }
         if let mat = await m.material(for: pano) {
             m.sphere.model?.materials = [mat]
             status = "Scan \(pano.label ?? "?") • \(roomLabel(pano))"
         } else {
             status = "Missing panorama image for \(pano.id)"
         }
+        withAnimation(.easeOut(duration: 0.35)) { fade = 0 }
     }
 
     private func roomLabel(_ pano: Panorama) -> String {
         guard let rid = pano.anchor?.room?.id else { return "—" }
         return model?.roomTypeById[rid] ?? "—"
+    }
+}
+
+/// A small floor-plan minimap with the scan points; tap a dot to jump there.
+struct Minimap: View {
+    let graph: HouseGraph
+    let panos: [Panorama]
+    let currentIndex: Int
+    let onSelect: (Int) -> Void
+
+    private var bounds: (minX: Double, maxX: Double, minY: Double, maxY: Double) {
+        let pts = graph.rooms.flatMap { $0.polygon }
+        return (pts.map { $0.x }.min() ?? -11, pts.map { $0.x }.max() ?? 1,
+                pts.map { $0.y }.min() ?? -4, pts.map { $0.y }.max() ?? 5)
+    }
+
+    private func project(_ x: Double, _ y: Double, in size: CGSize) -> CGPoint {
+        let b = bounds
+        let pad: CGFloat = 6
+        let w = size.width - pad * 2
+        let h = size.height - pad * 2
+        let fx = (x - b.minX) / max(b.maxX - b.minX, 1e-6)
+        let fy = (y - b.minY) / max(b.maxY - b.minY, 1e-6)
+        let px = pad + CGFloat(fx) * w
+        let py = pad + (1 - CGFloat(fy)) * h  // +y up
+        return CGPoint(x: px, y: py)
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            Canvas { ctx, size in
+                for r in graph.rooms where r.isWalkable && r.polygon.count >= 3 {
+                    var path = Path()
+                    let poly: [CGPoint] = r.polygon.map { project($0.x, $0.y, in: size) }
+                    path.addLines(poly)
+                    path.closeSubpath()
+                    ctx.fill(path, with: .color(Color.white.opacity(0.22)))
+                    ctx.stroke(path, with: .color(Color.white.opacity(0.55)), lineWidth: 1)
+                }
+                for (i, p) in panos.enumerated() {
+                    let c = project(p.position.x, p.position.y, in: size)
+                    let rad: CGFloat = (i == currentIndex) ? 6 : 3.5
+                    let rect = CGRect(x: c.x - rad, y: c.y - rad, width: rad * 2, height: rad * 2)
+                    let color: Color = (i == currentIndex) ? Color.yellow : Color.white.opacity(0.85)
+                    ctx.fill(Path(ellipseIn: rect), with: .color(color))
+                }
+            }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0).onEnded { g in
+                    var best = 0
+                    var bd = CGFloat.greatestFiniteMagnitude
+                    for (i, p) in panos.enumerated() {
+                        let c = project(p.position.x, p.position.y, in: geo.size)
+                        let d = hypot(c.x - g.location.x, c.y - g.location.y)
+                        if d < bd { bd = d; best = i }
+                    }
+                    if bd < 28 { onSelect(best) }
+                }
+            )
+        }
     }
 }
 
