@@ -21,6 +21,11 @@ final class ARPoseTracker: NSObject {
     private(set) var trackingState: String = "not started"
     private(set) var isNormal = false
 
+    /// Called on the main thread for each camera frame with its image and yaw.
+    /// Receivers must not keep the buffer longer than one short task.
+    @ObservationIgnored
+    var onFrame: ((CVPixelBuffer, Double) -> Void)?
+
     @ObservationIgnored
     let arView = ARView(frame: .zero, cameraMode: .ar, automaticallyConfigureSession: false)
 
@@ -64,6 +69,7 @@ extension ARPoseTracker: ARSessionDelegate {
     nonisolated func session(_ session: ARSession, didUpdate frame: ARFrame) {
         let m = frame.camera.transform
         let state = frame.camera.trackingState
+        let image = frame.capturedImage
         let pos = SIMD3<Float>(m.columns.3.x, m.columns.3.y, m.columns.3.z)
         let forward = -SIMD3<Float>(m.columns.2.x, m.columns.2.y, m.columns.2.z)
         let yawDeg = Double(atan2(forward.x, -forward.z)) * 180 / .pi
@@ -72,6 +78,7 @@ extension ARPoseTracker: ARSessionDelegate {
             self.yaw = (yawDeg + 360).truncatingRemainder(dividingBy: 360)
             self.trackingState = Self.describe(state)
             if case .normal = state { self.isNormal = true } else { self.isNormal = false }
+            if let yaw = self.yaw { self.onFrame?(image, yaw) }
         }
     }
 

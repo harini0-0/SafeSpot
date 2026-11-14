@@ -11,7 +11,14 @@
 //              the user to tap where they are
 //  Switching keeps the user's current point and heading (FloorPlanLocator.rebase),
 //  so the dot never jumps when the source changes.
+//
+//  Scan-photo matching (ScanMatcher) runs alongside the camera:
+//    • before alignment it suggests the room, so "Start here" replaces the first tap
+//    • while tracking it confirms the room (confidence 0.95), and if two confident
+//      matches in a row say a different room (current room + neighbours only), it
+//      moves the user to that room's scan spot. Never within 10 s of a user tap.
 
+import CoreVideo
 import Foundation
 import Observation
 
@@ -32,6 +39,9 @@ final class LocateSession {
 
     let ar = ARPoseTracker()
     let motion = MotionDeadReckoner(stepLength: 0.74)   // measured in Block 1
+    let scan = ScanMatcher()
+    /// Last time scan matching moved the user, with a message for the screen.
+    private(set) var scanNote: String?
     private(set) var locator: FloorPlanLocator?
     /// GPS: is this phone at the house's building?
     private(set) var building: BuildingCheck?
@@ -48,6 +58,8 @@ final class LocateSession {
     @ObservationIgnored private var lastTapDate: Date?
     @ObservationIgnored private var cameraWasUsable = true
     @ObservationIgnored private var cameraStateSince = Date()
+    @ObservationIgnored private var scanDisagreements = 0
+    @ObservationIgnored private var lastCandidates: Set<String>?
 
     init() {
         do {
@@ -61,6 +73,8 @@ final class LocateSession {
         } catch {
             loadError = "Couldn't load house data: \(error.localizedDescription)"
         }
+        ar.onFrame = { [weak self] image, yaw in self?.offerFrame(image, yaw: yaw) }
+        scan.onMatch = { [weak self] m in self?.handleMatch(m) }
     }
 
     var graph: HouseGraph? { locator?.graph }
@@ -79,6 +93,7 @@ final class LocateSession {
 
     func start() {
         ar.start()
+        scan.load()
         motion.start()
         building?.start()
         cameraStateSince = Date()
@@ -98,11 +113,27 @@ final class LocateSession {
     func realign() {
         mode = .tapHere
         position = nil
+        scan.clear()
+        scanNote = nil
+    }
+
+    /// The scan match is good enough to suggest a starting room.
+    var startSuggestion: ScanMatch? {
+        guard mode == .tapHere, let m = scan.match, m.isHint else { return nil }
+        return m
+    }
+
+    /// "Start here": use the matched room's scan spot as the first alignment tap.
+    func startAtSuggestion() {
+        guard let m = startSuggestion else { return }
+        mode = .tapToward(m.scanPoint)
     }
 
     /// A tap on the floor plan, in model coordinates.
     func tap(_ p: Point2D) {
         guard var loc = locator else { return }
+        scanDisagreements = 0
+        scanNote = nil
         switch mode {
         case .tapHere:
             mode = .tapToward(p)
@@ -180,13 +211,48 @@ final class LocateSession {
         } else {
             switch source {
             case .tap: confidence = 1.0
-            case .camera: confidence = loc.roomId == nil ? 0.5 : 0.9
+            case .camera:
+                if loc.roomId == nil { confidence = 0.5 }
+                else if let m = scan.match, m.roomId == loc.roomId, m.isHint { confidence = 0.95 }
+                else { confidence = 0.9 }
             case .motion: confidence = max(0.2, 0.8 - 0.04 * motionDistance)  // 0.4 at 10 m
             case .gps: confidence = 0.2
             }
         }
         position = Position(roomId: loc.roomId, x: p.x, y: p.y, heading: h,
                             confidence: confidence, source: source, timestamp: Position.now())
+    }
+
+    // MARK: - Scan-photo matching
+
+    private func offerFrame(_ image: CVPixelBuffer, yaw: Double) {
+        guard !simulateCameraLoss, scan.isReady else { return }
+        // Compare only the current room and its neighbours once we know the room.
+        var candidates: Set<String>? = nil
+        if mode == .tracking, let loc = locator, let room = loc.roomId {
+            candidates = loc.graph.neighbors(of: room).union([room])
+        }
+        if candidates != lastCandidates {
+            scan.clear()
+            lastCandidates = candidates
+        }
+        scan.consider(image, yaw: yaw, candidates: candidates)
+    }
+
+    private func handleMatch(_ m: ScanMatch) {
+        guard mode == .tracking, active == .camera, var loc = locator else { return }
+        if m.roomId == loc.roomId { scanDisagreements = 0; return }
+        let sinceTap = lastTapDate.map { Date().timeIntervalSince($0) } ?? .infinity
+        guard m.isConfident, sinceTap > 10 else { return }
+        scanDisagreements += 1
+        guard scanDisagreements >= 2, let pose = pose(of: .camera) else { return }
+        loc.correct(to: m.scanPoint, pose: pose)
+        locator = loc
+        scanDisagreements = 0
+        scan.clear()
+        let name = loc.graph.roomsById[m.roomId]?.type ?? "another room"
+        scanNote = "Camera recognised the \(name) — moved you there"
+        publish(source: .camera)
     }
 
     /// The Position as the JSON that goes on the wire (docs/interfaces.md §1).

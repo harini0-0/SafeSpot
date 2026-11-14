@@ -243,4 +243,12 @@ struct FloorPlanLocator {
         let x = d.truncatingRemainder(dividingBy: 360)
         return x < 0 ? x + 360 : x
     }
+
+    /// Wrap an angle difference into −180…180.
+    static func wrap180(_ d: Double) -> Double {
+        var x = d.truncatingRemainder(dividingBy: 360)
+        if x > 180 { x -= 360 }
+        if x < -180 { x += 360 }
+        return x
+    }
 }

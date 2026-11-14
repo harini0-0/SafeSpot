@@ -34,6 +34,16 @@ struct FloorPlanView: View {
             } else if let locator = session.locator {
                 PlanCanvas(locator: locator, session: session)
                     .padding(8)
+                    .overlay(alignment: .top) {
+                        if let m = session.startSuggestion {
+                            Button("Camera thinks: \(roomType(m.roomId)) — start here") {
+                                session.startAtSuggestion()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .font(.callout)
+                            .padding(.top, 6)
+                        }
+                    }
             }
 
             statusBar
@@ -57,9 +67,30 @@ struct FloorPlanView: View {
         case .tapToward: return "2 of 2 — Tap a point you're facing"
         case .tracking:
             if session.needsTap { return "Not sure where you are — tap where you are on the plan" }
+            if let note = session.scanNote { return note }
             if session.active == .motion { return "Camera lost — following your steps. Tap to correct." }
             return "Walk. Tap the plan any time to say \"I'm here\"."
         }
+    }
+
+    private func roomType(_ id: String) -> String {
+        session.graph?.roomsById[id]?.type ?? "a room"
+    }
+
+    private var scanText: String {
+        let scan = session.scan
+        if let e = scan.loadError { return "Scan match: \(e)" }
+        guard scan.isReady else { return "Scan match: loading scan photos…" }
+        if session.simulateCameraLoss || session.active == .motion { return "Scan match: paused (no camera)" }
+        guard let m = scan.match else { return "Scan match: look around slowly…" }
+        let detail = String(format: "gap %.2f, dist %.2f, %d views", m.margin ?? 0, m.distance, m.views)
+        if m.looksElsewhere { return "Scan match: this doesn't look like the house (\(detail))" }
+        if session.mode == .tracking, m.roomId == session.position?.roomId, m.isHint {
+            return "Scan match: confirms \(roomType(m.roomId)) ✓ (\(detail))"
+        }
+        if m.isConfident { return "Scan match: sure it's the \(roomType(m.roomId)) (\(detail))" }
+        if m.isHint { return "Scan match: maybe the \(roomType(m.roomId)) (\(detail))" }
+        return "Scan match: not sure (\(detail))"
     }
 
     private var trackerText: String {
@@ -103,6 +134,10 @@ struct FloorPlanView: View {
                     .font(.caption)
                     .tint(.orange)
             }
+            Text(scanText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
             if let b = session.building {
                 BuildingRow(building: b)
             }
