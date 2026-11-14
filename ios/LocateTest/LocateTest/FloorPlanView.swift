@@ -80,6 +80,9 @@ struct FloorPlanView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            if let b = session.building {
+                BuildingRow(building: b)
+            }
             HStack {
                 Button("Re-align") { session.realign() }
                     .buttonStyle(.bordered)
@@ -228,5 +231,47 @@ private struct PlanMapping {
 
     func toModel(_ s: CGPoint) -> Point2D {
         Point2D(x: (Double(s.x) - ox) / scale + minX, y: maxY - (Double(s.y) - oy) / scale)
+    }
+}
+
+/// GPS building check, with the demo override shown loudly when it's on.
+private struct BuildingRow: View {
+    @Bindable var building: BuildingCheck
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon).foregroundStyle(color)
+            Text(text).font(.caption)
+            Spacer()
+            Toggle("Demo", isOn: $building.demoOverride)
+                .toggleStyle(.button)
+                .font(.caption)
+                .tint(.orange)
+        }
+    }
+
+    private var text: String {
+        if building.permissionDenied { return "Building: location permission off" }
+        let base: String
+        switch building.verdict {
+        case .waiting: base = "Building: waiting for GPS…"
+        case .atHouse(let d): base = "Building: at the house (\(Self.fmt(d)))"
+        case .notAtHouse(let d): base = "Building: not at the house (\(Self.fmt(d)) away)"
+        case .unsure(let d): base = "Building: GPS too rough to tell (\(Self.fmt(d)))"
+        }
+        return building.demoOverride ? base + " — DEMO OVERRIDE ON" : base
+    }
+
+    private var icon: String {
+        building.isAtHouse ? "checkmark.seal.fill" : "questionmark.circle"
+    }
+
+    private var color: Color {
+        if building.demoOverride { return .orange }
+        return building.isAtHouse ? .green : .secondary
+    }
+
+    static func fmt(_ m: Double) -> String {
+        m >= 1000 ? String(format: "%.0f km", m / 1000) : String(format: "%.0f m", m)
     }
 }

@@ -17,6 +17,8 @@ final class LocateSession {
 
     let ar = ARPoseTracker()
     private(set) var locator: FloorPlanLocator?
+    /// GPS: is this phone at the house's building?
+    private(set) var building: BuildingCheck?
     private(set) var loadError: String?
     private(set) var mode: Mode = .tapHere
     private(set) var position: Position?
@@ -30,7 +32,9 @@ final class LocateSession {
                 ?? Bundle.main.url(forResource: "zyzG7fqtBDv", withExtension: "json", subdirectory: "HouseData")
             guard let url else { throw CocoaError(.fileNoSuchFile) }
             let model = try MatterportModel.load(contentsOf: url)
-            locator = FloorPlanLocator(graph: HouseGraph(model: model))
+            let graph = HouseGraph(model: model)
+            locator = FloorPlanLocator(graph: graph)
+            building = BuildingCheck(geo: model.sections.geolocation.geocoordinates, graph: graph)
         } catch {
             loadError = "Couldn't load house data: \(error.localizedDescription)"
         }
@@ -40,6 +44,7 @@ final class LocateSession {
 
     func start() {
         ar.start()
+        building?.start()
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 20.0, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
@@ -49,6 +54,7 @@ final class LocateSession {
     func stop() {
         timer?.invalidate(); timer = nil
         ar.stop()
+        building?.stop()
     }
 
     func realign() {
