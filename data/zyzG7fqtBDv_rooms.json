@@ -1,0 +1,210 @@
+{
+  "data": {
+    "model": {
+      "id": "zyzG7fqtBDv",
+      "floors": [
+        {
+          "id": "tsmq1wak12rhgn0mawksxcwcd",
+          "label": "Floor 1",
+          "rooms": [
+            {
+              "id": "m8npxsuk79xy21dd09x9wtped",
+              "label": "",
+              "classifications": [
+                {
+                  "label": "Closet",
+                  "confidence": 1,
+                  "defaultKeywords": [
+                    "indoor"
+                  ]
+                }
+              ],
+              "dimensionEstimates": {
+                "area": 0.4960320007774317,
+                "areaIndoor": 0.4960320007774317,
+                "height": 0
+              }
+            },
+            {
+              "id": "19ab05tns5h6y4qm42esqqpea",
+              "label": "",
+              "classifications": [
+                {
+                  "label": "Void",
+                  "confidence": 1,
+                  "defaultKeywords": [
+                    "nonArea",
+                    "hide"
+                  ]
+                }
+              ],
+              "dimensionEstimates": {
+                "area": 0.22189545135260252,
+                "areaIndoor": 0.22189545135260252,
+                "height": 0
+              }
+            },
+            {
+              "id": "613htqkzf66zz7hf7n8kzszed",
+              "label": "",
+              "classifications": [
+                {
+                  "label": "Living Room",
+                  "confidence": 1,
+                  "defaultKeywords": [
+                    "indoor"
+                  ]
+                }
+              ],
+              "dimensionEstimates": {
+                "area": 25.735537077057796,
+                "areaIndoor": 25.735537077057796,
+                "height": 2.4476731349527836
+              }
+            },
+            {
+              "id": "9hauvfhwiqt",
+              "label": "",
+              "classifications": [
+                {
+                  "label": "Hallway",
+                  "confidence": 1,
+                  "defaultKeywords": [
+                    "indoor"
+                  ]
+                }
+              ],
+              "dimensionEstimates": {
+                "area": 4.084395791924003,
+                "areaIndoor": 4.084395791924003,
+                "height": 2.1220739720761777
+              }
+            },
+            {
+              "id": "cdz3fkt38kae7tapstpt0eaeb",
+              "classifications": [
+                {
+                  "label": "Bedroom",
+                  "confidence": 0.999858021736145,
+                  "defaultKeywords": [
+                    "indoor"
+                  ]
+                }
+              ],
+              "dimensionEstimates": {
+                "area": 13.09874257803381,
+                "areaIndoor": 13.09874257803381,
+                "height": 2.440000057220459
+              }
+            },
+            {
+              "id": "xy2x8mpaaqknp7q2c3nnbw1ma",
+              "classifications": [
+                {
+                  "label": "Bedroom",
+                  "confidence": 0.9968171715736389,
+                  "defaultKeywords": [
+                    "indoor"
+                  ]
+                }
+              ],
+              "dimensionEstimates": {
+                "area": 11.5670236501259,
+                "areaIndoor": 11.5670236501259,
+                "height": 2.429999828338623
+              }
+            },
+            {
+              "id": "tt6gm2a0463x9wmnx7rn6gugc",
+              "label": "",
+              "classifications": [
+                {
+                  "label": "Kitchen",
+                  "confidence": 1,
+                  "defaultKeywords": [
+                    "indoor"
+                  ]
+                }
+              ],
+              "dimensionEstimates": {
+                "area": 6.4541215363564,
+                "areaIndoor": 6.4541215363564,
+                "height": 2.160336576253176
+              }
+            },
+            {
+              "id": "h26t7ky77ew74yb0pg8qqf5rd",
+              "label": "",
+              "classifications": [
+                {
+                  "label": "Bathroom",
+                  "confidence": 1,
+                  "defaultKeywords": [
+                    "indoor"
+                  ]
+                }
+              ],
+              "dimensionEstimates": {
+                "area": 4.804082829548805,
+                "areaIndoor": 4.804082829548805,
+                "height": 2.152638204842806
+              }
+            },
+            {
+              "id": "3m54yff1z7crxaywd8if9rb0d",
+              "label": "",
+              "classifications": [
+                {
+                  "label": "Closet",
+                  "confidence": 1,
+                  "defaultKeywords": [
+                    "indoor"
+                  ]
+                }
+              ],
+              "dimensionEstimates": {
+                "area": 3.916942274674258,
+                "areaIndoor": 3.916942274674258,
+                "height": 2.1260702700912955
+              }
+            },
+            {
+              "id": "2qdmc5i9byxi79ry1pxdkqzea",
+              "classifications": [
+                {
+                  "label": "Bathroom",
+                  "confidence": 0.8246813416481018,
+                  "defaultKeywords": [
+                    "indoor"
+                  ]
+                }
+              ],
+              "dimensionEstimates": {
+                "area": 3.9304476443701777,
+                "areaIndoor": 3.9304476443701777,
+                "height": 2.4099998474121094
+              }
+            },
+            {
+              "id": "a5f9age4zzxewres6iqux2emc",
+              "classifications": [
+                {
+                  "label": "Closet",
+                  "confidence": 0.8917696475982666,
+                  "defaultKeywords": [
+                    "indoor"
+                  ]
+                }
+              ],
+              "dimensionEstimates": {
+                "area": 1.7973810649067374,
+                "areaIndoor": 1.7973810649067374,
+                "height": 2.440000057220459
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
