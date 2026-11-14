@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+deepagents
+langchain-aws
+boto3
+httpx
+pydantic
