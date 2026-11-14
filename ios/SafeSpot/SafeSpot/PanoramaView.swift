@@ -34,10 +34,38 @@ final class PanoramaModel {
 
     var current: Panorama? { panos.indices.contains(index) ? panos[index] : nil }
 
+    /// Yaw-only look: turning left/right around the vertical axis. Pitch stays level
+    /// (no looking up/down) so navigation reads clearly.
     func look(dx: Double, dy: Double) {
         yaw += dx * 0.004
-        pitch = max(-1.3, min(1.3, pitch - dy * 0.004))
         updateCamera()
+    }
+
+    // MARK: - Movement between scan points (look where you want, then go forward)
+
+    var history: [Int] = []
+
+    private func neighborIndices() -> [Int] {
+        guard let c = current else { return [] }
+        let idxOf = Dictionary(uniqueKeysWithValues: panos.enumerated().map { ($0.element.id, $0.offset) })
+        return (c.anchor?.neighbors ?? []).compactMap { idxOf[$0] }
+    }
+
+    private func angleDiff(_ a: Double, _ b: Double) -> Double {
+        var d = (a - b).truncatingRemainder(dividingBy: 360)
+        if d > 180 { d -= 360 }; if d < -180 { d += 360 }
+        return abs(d)
+    }
+
+    /// The neighbouring scan point closest to the current look direction (within ~80°).
+    func forwardIndex() -> Int? {
+        let va = viewAzimuthDeg
+        var best: Int?; var bd = 80.0
+        for ni in neighborIndices() {
+            let d = angleDiff(azimuthDeg(to: panos[ni].position), va)
+            if d < bd { bd = d; best = ni }
+        }
+        return best
     }
 
     func advance(by delta: Int) { index = (index + delta + panos.count) % max(panos.count, 1) }
@@ -160,11 +188,9 @@ struct PanoramaView: View {
     @State private var status = "Loading…"
     @State private var fade: Double = 0
     @State private var plan: PanoramaModel.DemoPlan?
-    @State private var routeStep = 0
     @State private var headingTick = 0
     @State private var showCalib = false
     private let hazards = ["Tornado", "Earthquake", "Fire"]
-    private let tick = Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -185,9 +211,9 @@ struct PanoramaView: View {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { g in
-                        model?.look(dx: Double(g.translation.width - lastLook.width),
-                                    dy: Double(g.translation.height - lastLook.height))
+                        model?.look(dx: Double(g.translation.width - lastLook.width), dy: 0)
                         lastLook = g.translation
+                        headingTick &+= 1   // refresh the arrow as you turn
                     }
                     .onEnded { _ in lastLook = .zero }
             )
@@ -197,7 +223,8 @@ struct PanoramaView: View {
 
             // Floating directional arrow toward the safe spot, composited over the photo.
             if let m = model, let p = plan, p.hazard != "Earthquake",
-               let targetIdx = p.routePanoIndices.last, m.panos.indices.contains(targetIdx) {
+               let targetIdx = p.routePanoIndices.last, m.panos.indices.contains(targetIdx),
+               m.index != targetIdx {
                 let _ = headingTick
                 let target = m.panos[targetIdx].position
                 let rel = m.azimuthDeg(to: target) - m.viewAzimuthDeg
@@ -248,23 +275,22 @@ struct PanoramaView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                 if let p = plan {
-                    VStack(spacing: 8) {
-                        Text(p.instruction)
-                            .font(.subheadline.bold())
-                            .multilineTextAlignment(.center)
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 10)
-                        if p.hazard != "Earthquake" && p.routePanoIndices.count > 1 {
-                            let atEnd = routeStep >= p.routePanoIndices.count - 1
-                            Button { nextRouteStep(p) } label: {
-                                label(atEnd ? "You're at the safe spot ✓" : "Go ▶  (step \(routeStep + 1)/\(p.routePanoIndices.count))")
-                            }
-                            .disabled(atEnd)
-                        }
-                    }
-                    .padding(12)
-                    .frame(maxWidth: 360)
-                    .background(.green.opacity(0.25), in: RoundedRectangle(cornerRadius: 12))
+                    let arrived = atSafeSpot(p)
+                    Text(arrived ? "You're at the safe spot ✓ — take cover." : p.instruction)
+                        .font(.subheadline.bold())
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.white)
+                        .padding(12)
+                        .frame(maxWidth: 360)
+                        .background(.green.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
+                }
+
+                // Movement: turn with a drag, then walk forward toward where you look.
+                HStack(spacing: 12) {
+                    Button { moveBack() } label: { label("◀ Back") }
+                        .disabled(model?.history.isEmpty ?? true)
+                    Button { moveForward() } label: { label("Forward ▶") }
+                        .disabled(model?.forwardIndex() == nil)
                 }
 
                 HStack(spacing: 10) {
@@ -294,7 +320,6 @@ struct PanoramaView: View {
                 .padding(.trailing, 12).padding(.bottom, 300)
             }
         }
-        .onReceive(tick) { _ in headingTick &+= 1 }
         .onLongPressGesture { showCalib.toggle() }
     }
 
@@ -304,32 +329,29 @@ struct PanoramaView: View {
 
     private func startHazard(_ h: String) {
         guard let m = model else { return }
-        let p = m.demoPlan(for: h)
-        plan = p
-        routeStep = 0
-        // Jump to the start of the route (current scan).
-        if let first = p.routePanoIndices.first, first != m.index {
-            m.index = first; Task { await load(m, index: first) }
-        }
+        plan = m.demoPlan(for: h)   // keep you where you are; the arrow guides you out
     }
 
-    private func nextRouteStep(_ p: PanoramaModel.DemoPlan) {
-        guard let m = model, routeStep < p.routePanoIndices.count - 1 else { return }
-        routeStep += 1
-        let idx = p.routePanoIndices[routeStep]
-        m.index = idx
-        Task { await load(m, index: idx) }
+    private func atSafeSpot(_ p: PanoramaModel.DemoPlan) -> Bool {
+        guard let m = model, let t = p.routePanoIndices.last else { return false }
+        return m.index == t
+    }
+
+    private func moveForward() {
+        guard let m = model, let ni = m.forwardIndex() else { return }
+        m.history.append(m.index); m.index = ni
+        Task { await load(m, index: ni) }
+    }
+
+    private func moveBack() {
+        guard let m = model, let prev = m.history.popLast() else { return }
+        m.index = prev
+        Task { await load(m, index: prev) }
     }
 
     private func label(_ s: String) -> some View {
         Text(s).font(.subheadline.bold()).padding(.horizontal, 18).padding(.vertical, 10)
             .background(.ultraThinMaterial, in: Capsule()).foregroundStyle(.white)
-    }
-
-    private func step(_ d: Int) {
-        guard let m = model else { return }
-        m.advance(by: d)
-        Task { await load(m, index: m.index) }
     }
 
     private func load(_ m: PanoramaModel, index: Int) async {
