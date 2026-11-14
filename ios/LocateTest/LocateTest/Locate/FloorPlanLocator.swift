@@ -99,6 +99,16 @@ struct FloorPlanLocator {
         roomId = room(containing: here)?.id
     }
 
+    /// Switch tracking source (e.g. camera → motion) without moving the user: keep
+    /// the current point and heading, and map the new source's `pose` onto them.
+    mutating func rebase(pose: TrackingPose) {
+        guard let p = point, let h = heading else { return }
+        let rot = Self.wrap360(h - pose.yaw)
+        rotation = rot
+        let r = Self.rotate(Point2D(x: pose.u, y: pose.v), by: rot)
+        offset = Point2D(x: p.x - r.x, y: p.y - r.y)
+    }
+
     // MARK: - Tracking updates
 
     /// Feed a new tracking pose; returns the snapped model-space point.

@@ -26,7 +26,7 @@ struct FloorPlanView: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
                 .padding(8)
-                .background(Color.accentColor.opacity(0.12))
+                .background(session.needsTap ? Color.orange.opacity(0.35) : Color.accentColor.opacity(0.12))
 
             if let error = session.loadError {
                 Text(error).foregroundStyle(.red).padding()
@@ -55,7 +55,20 @@ struct FloorPlanView: View {
         switch session.mode {
         case .tapHere: return "1 of 2 — Tap where you're standing on the plan"
         case .tapToward: return "2 of 2 — Tap a point you're facing"
-        case .tracking: return "Walk. Tap the plan any time to say \"I'm here\"."
+        case .tracking:
+            if session.needsTap { return "Not sure where you are — tap where you are on the plan" }
+            if session.active == .motion { return "Camera lost — following your steps. Tap to correct." }
+            return "Walk. Tap the plan any time to say \"I'm here\"."
+        }
+    }
+
+    private var trackerText: String {
+        switch session.active {
+        case .camera:
+            return session.cameraUsable ? "Tracking: camera" : "Tracking: camera (unsteady…)"
+        case .motion:
+            let walking = session.motion.isWalking ? "walking" : "standing"
+            return String(format: "Tracking: steps + gyro · %@ · %.1f m since fix", walking, session.motionDistance)
         }
     }
 
@@ -79,6 +92,16 @@ struct FloorPlanView: View {
                         .font(.caption.monospaced())
                         .foregroundStyle(.secondary)
                 }
+            }
+            HStack {
+                Text(trackerText)
+                    .font(.caption)
+                    .foregroundStyle(session.active == .motion ? Color.orange : Color.secondary)
+                Spacer()
+                Toggle("No camera", isOn: $session.simulateCameraLoss)
+                    .toggleStyle(.button)
+                    .font(.caption)
+                    .tint(.orange)
             }
             if let b = session.building {
                 BuildingRow(building: b)
