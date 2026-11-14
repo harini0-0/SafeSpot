@@ -1,0 +1,10 @@
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcuserstate
+build/
+# Python
+.venv/
+__pycache__/
+# Secrets
+.env
