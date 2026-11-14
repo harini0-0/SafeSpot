@@ -9,5 +9,12 @@
   the real data without the app bundle or a simulator. Per CLAUDE.md, the source data
   is read-only; this copy is identical to the source (checksum above matches).
 
-To refresh it if the source ever changes:
-`cp data/zyzG7fqtBDv.json ios/SafeSpotCore/Tests/SafeSpotCoreTests/Fixtures/`
+`out_res_50k.obj` is a **verbatim copy** of the full-house 50k mesh
+`data/assets/mesh/50k/out_res_50k.obj` (downloaded by `scripts/fetch_assets.py`).
+
+- Derived from: `data/assets/mesh/50k/out_res_50k.obj`
+- sha256: `6e2c220fdafba5163d891e481bc097904f7a11b53d073914291f8d50566ffd97`
+- Geometry only (no UVs/material), used to test mesh segmentation. Do not edit.
+
+To refresh them if the source ever changes:
+`cp data/zyzG7fqtBDv.json data/assets/mesh/50k/out_res_50k.obj ios/SafeSpotCore/Tests/SafeSpotCoreTests/Fixtures/`
