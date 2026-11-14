@@ -5,6 +5,9 @@ DerivedData/
 build/
 # Python
 .venv/
+scripts/.venv/
 __pycache__/
 # Secrets
 .env
+# CoStar / Matterport data (read-only; keep out of the repo until CoStar confirms public use is allowed)
+data/
