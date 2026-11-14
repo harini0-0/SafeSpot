@@ -2,6 +2,7 @@
 //  LocateTest — the house floor plan with your live position (locate Block 2).
 //  Everything drawn comes from the house data via SafeSpotCore.HouseGraph.
 
+import SafeSpotCore
 import SwiftUI
 
 struct FloorPlanView: View {

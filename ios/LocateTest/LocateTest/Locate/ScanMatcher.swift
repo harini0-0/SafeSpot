@@ -20,6 +20,7 @@
 
 import CoreVideo
 import Foundation
+import SafeSpotCore
 import ImageIO
 import Observation
 import UIKit

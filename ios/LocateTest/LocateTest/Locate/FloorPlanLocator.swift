@@ -14,6 +14,7 @@
 //  All geometry comes from the house data; nothing is invented.
 
 import Foundation
+import SafeSpotCore
 
 /// A floor point in the tracking frame, already projected so that it is
 /// right-handed seen from above: u = AR x, v = −AR z. `yaw` is degrees clockwise

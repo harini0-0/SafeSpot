@@ -10,9 +10,14 @@
       "Base",
     ],
   },
+  "packages": [
+    {
+      "kind": "local",
+      "path": "../SafeSpotCore",
+    },
+  ],
   "files": [
     { "kind": "folder", "path": "LocateTest", "target-membership": [ "LocateTest" ] },
-    { "kind": "folder", "path": "../SafeSpotCore/Sources/SafeSpotCore", "target-membership": [ "LocateTest" ] },
     {
       "kind": "group",
       "name": "Products",
@@ -31,6 +36,13 @@
         "compile-sources",
         "frameworks",
         "resources",
+      ],
+      "package-product-members": [
+        {
+          "package": "SafeSpotCore",
+          "product-name": "SafeSpotCore",
+          "build-phase": { "build-phase": "frameworks" },
+        },
       ],
       "build-settings": {
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",

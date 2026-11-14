@@ -7,6 +7,7 @@
 
 import CoreLocation
 import Foundation
+import SafeSpotCore
 import Observation
 
 enum BuildingVerdict: Equatable {

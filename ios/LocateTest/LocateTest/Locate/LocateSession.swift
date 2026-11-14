@@ -20,6 +20,7 @@
 
 import CoreVideo
 import Foundation
+import SafeSpotCore
 import Observation
 
 @Observable
