@@ -121,18 +121,49 @@ This keeps it small, fast and hard to make hallucinate.
 
 No extra MCPs are needed for weather or quakes; they are plain HTTP calls.
 
-## Data contract (fill in once the CoStar data arrives)
+## Data contract (filled from the real CoStar / Matterport data)
 
-For each item, record the exact field name from the real data.
+Source: Matterport model export, `modelId` `zyzG7fqtBDv`, address `7950 Bellfort St, Houston, TX, 77061, US`. Three files in `data/` (read-only):
+- `zyzG7fqtBDv.json` — full model (sections: `details`, `address`, `geolocation`, `floors`, `rooms`, `panoramas`, `assets`).
+- `zyzG7fqtBDv_geo.json` — geocoordinates only (`data.model.geocoordinates`).
+- `zyzG7fqtBDv_rooms.json` — rooms summary (`data.model.floors[].rooms[]` with `classifications`, `dimensionEstimates`).
 
-- [ ] Coordinate system: units, origin, latitude/longitude of the origin, north direction
-- [ ] Rooms: ID, name/type, floor, outline
-- [ ] Walls: start/end, height, material, exterior or interior
-- [ ] Doors: position, width, the two rooms they connect, exterior exits
-- [ ] Windows: position, size, glass type
-- [ ] Objects: ID, type, position, size, material
-- [ ] Textures and photos: format and how they attach to surfaces
-- [ ] Roof: structure and span
+Paths below are within `zyzG7fqtBDv.json` unless noted. All lengths are **metric (meters)**.
+
+- [x] **Coordinate system:**
+  - Units: top-level `units` = `"metric"`; per-item `dimensionEstimates.units`.
+  - Model space: right-handed, meters. Floor geometry is 2D `x,y` in `sections.rooms.rooms[].boundary.edges[].vertices[].position`; 3D points (panoramas) are `x,y,z` in `sections.panoramas.panoLocations[].position`.
+  - Origin: the model's internal `(0,0,0)`. **No explicit origin field.** Model→geographic mapping is `sections.geolocation.geocoordinates.rotation` (quaternion) + `.translation` (`x,y,z`).
+  - Lat/long/alt of origin: `sections.geolocation.geocoordinates.{latitude, longitude, altitude, source}` (29.67302, -95.26936, 12.018 m, source `"processing"`); string copies in `sections.geolocation.geolocation.{lat, long, altitude}`; also `zyzG7fqtBDv_geo.json` → `data.model.geocoordinates`.
+  - North direction: **no explicit field.** Derived from `geocoordinates.rotation` quaternion (w 0.97303, z 0.23069 → ≈26.68° about z).
+- [x] **Rooms:** `sections.rooms.rooms[]` (11 rooms, single floor).
+  - ID: `id`. Name/type: `classifications[].label` (Living Room, Bedroom ×2, Kitchen, Bathroom ×2, Closet ×3, Hallway, Void) with `classifications[].confidence` and `classifications[].id`. Free-text `label` is mostly empty.
+  - Floor: `floor.{id, label, sequence}`; also `sections.floors.floors[]`.
+  - Outline: `boundary.edges[]` (ordered wall segments, see Walls); `holes` (present, empty in this house).
+  - Also: `dimensionEstimates.{area, areaIndoor, areaIndoorWithWalls, depth, width, height, units}`; `ceiling.{minHeight, maxHeight}` (empty `{}` for the two zero-height rooms); `keywords`, `tags`.
+- [x] **Walls:** `sections.rooms.rooms[].boundary.edges[]`.
+  - Start/end: `vertices[0].position.{x,y}` and `vertices[1].position.{x,y}`.
+  - `type`: `"wall"` or `"invisible"` (open boundary between rooms); `thickness`; `centerLineBias`; `id`.
+  - Height: **NOT FOUND per wall.** Use room `dimensionEstimates.height` / `ceiling.{minHeight,maxHeight}`.
+  - Material: **NOT FOUND.**
+  - Exterior vs interior: **no explicit flag.** Derivable — an edge `id` shared by two rooms is interior; an edge belonging to only one room is exterior (25 of 39 edges are shared here).
+- [x] **Doors:** `boundary.edges[].openings[]` where `type` == `"doorway"` (17 total; labels `door-unknown`, `door-pivot`).
+  - Position: `relativeCenter` (0–1 along the parent edge) + `lowerElevation`; parent edge `vertices` give world placement.
+  - Width: `width`. Height: `height`. Also `id`, `label`, `metadata` (empty).
+  - The two rooms connected: **no explicit field.** Derivable — the doorway's parent edge `id` appears in the two rooms it joins.
+  - Exterior exits: **no explicit flag.** Derivable — a doorway on an edge that belongs to only one room is an exterior exit.
+- [x] **Windows:** `boundary.edges[].openings[]` where `type` == `"window"` (4 total; label `window-unknown`).
+  - Position: `relativeCenter` + `lowerElevation` on parent edge. Size: `width`, `height`. Also `id`, `metadata` (empty).
+  - Glass type: **NOT FOUND.**
+- [ ] **Objects:** **NOT FOUND.** No furniture/objects anywhere in the data (no table, tub, bed, etc.). This blocks the "safe object" step of the safe-spot logic — see open questions. Not in CoStar/Matterport data (0 annotations). Derived from panorama photos via Phase O: data/derived/objects.json.
+
+- [x] **Textures and photos:** under `sections.assets.assets`.
+  - Textures: `textures[]` — `format` `"jpg"`, `resolution`, `quality`, `urlTemplate`, nested `textures[]`, `id` (e.g. `50k-high`). Applied to the OBJ meshes below.
+  - Meshes (geometry textures attach to): `meshes[]` — `format` `"obj"`, `resolution` (`500k`, `50k`), `url`/`downloadUrl`, `filename`, `status`.
+  - Panorama scan photos (for `locate`): `sections.panoramas.panoLocations[]` (19) — `id`, `label`, `position.{x,y,z}`, `rotation` (quaternion), `anchor.{room.id, floor.id, neighbors[]}`, `skyboxes[].{resolution, format, urlTemplate, status}`.
+  - Floorplans: `floorplans[]` (8) — raster (`format` jpg/png, `width`, `height`, `resolution` px/m, `origin.{x,y}` image→model meters, `floor.id`, `url`) and vector `format` `"dxf"`.
+  - **Note:** every asset `url`/`urlTemplate` is a time-limited remote Matterport CDN link (`validUntil`); none of these binaries are in `data/`.
+- [ ] **Roof:** **NOT FOUND.** No roof structure or span. Single floor (`Floor 1`). Closest proxies: per-room `ceiling.{minHeight,maxHeight}` and `dimensionEstimates.height`.
 
 ## Repo layout
 
