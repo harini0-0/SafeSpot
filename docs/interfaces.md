@@ -11,7 +11,7 @@
 > - Code does the math; the agent only classifies/judges. Coordinates, geometry and
 >   routes are never invented.
 >
-> ⚠️ **Open decisions** are marked `DECISION:` — Sanjana/Lavanya/Harini confirm before freeze.
+> All interface decisions below are resolved (heading frame, re-plan transport, naming).
 
 ## Coordinate & units conventions
 
@@ -19,11 +19,13 @@
   floor point `{x, y}` (same axes as `boundary.edges[].vertices[].position`).
 - The app converts model space → RealityKit scene space internally (Phase B C-transforms);
   **the wire format is always model space**, never scene space.
-- `heading` is **degrees, clockwise, 0° = model +Y axis** (model-space heading).
-  Geographic north is at model heading **+26.676°** (derived from the geo rotation
-  quaternion; see CLAUDE.md data contract). Compass heading = model heading + 26.676°.
-  `DECISION:` confirm with Sanjana that `locate` emits model-space heading (it will
-  convert from compass using this offset), so `guide` and `backend` never handle raw compass.
+- `heading` is **degrees in model space, 0° = model +Y axis, increasing clockwise,
+  range 0–360**. `locate` emits model-space heading (converting from compass with the
+  offset below), so `guide` and `backend` never handle raw compass.
+  **Helper:** true-north heading = model heading + 26.676° (wrap into 0–360). Conversely,
+  model heading = compass heading − 26.676°. The 26.676° is derived from the geo rotation
+  quaternion (see CLAUDE.md data contract). `SafeSpotCore` exposes it via
+  `CoordinateTransform.northHeadingDegrees(geo)`.
 - Timestamps are **ISO-8601 UTC strings** (e.g. `2026-11-14T21:13:08Z`).
 - Confidence is a float **0.0–1.0**.
 
@@ -119,7 +121,7 @@ among code-computed candidates.
 { "kind": "object", "objectId": "<id from data/derived/objects.json>" }
 { "kind": "point",  "x": -8.4, "y": 0.3, "roomId": "<real room id>" }
 ```
-`DECISION:` `object` targets require Phase O output; until `objects.json` exists the
+Note: `object` targets require Phase O output; until `objects.json` exists the
 planner emits only `room`/`point` targets.
 
 **Waypoint:** `{ "x": number, "y": number, "roomId": string }` (roomId = the room that
@@ -150,8 +152,11 @@ If the report changes the active route, the backend may return the new `Plan` in
 ### Re-plan push  `backend` → app
 When a room becomes blocked and the active route must change, the backend pushes a fresh
 `<Plan>` so the app swaps arrows/instructions immediately (CLAUDE.md Block 3).
-`DECISION:` transport not yet chosen — candidates: WebSocket, SSE, or short-poll of
-`GET /plan/{planId}`. Payload is a `Plan` regardless. **Lavanya to pick; Harini wires the client.**
+
+- **Transport: WebSocket at `/ws/plan`** (FastAPI WebSocket server; `URLSessionWebSocketTask`
+  on iOS). Each message is a `<Plan>` JSON object.
+- **Fallback:** if the socket drops, the app polls `POST /plan` (with the latest `Position`
+  and `hazard`) **every 2 seconds** until the WebSocket reconnects.
 
 ## 5. Canonical IDs (from the real data — do not hand-edit)
 
@@ -162,8 +167,8 @@ bedrooms/baths/closets identically, so we disambiguate by area.
 | roomId | type | display name | area m² |
 |---|---|---|---|
 | `613htqkzf66zz7hf7n8kzszed` | Living Room | Living Room | 25.7 |
-| `cdz3fkt38kae7tapstpt0eaeb` | Bedroom | Bedroom 1 | 13.1 |
-| `xy2x8mpaaqknp7q2c3nnbw1ma` | Bedroom | Bedroom 2 | 11.6 |
+| `cdz3fkt38kae7tapstpt0eaeb` | Bedroom | Bedroom 1 (north side) | 13.1 |
+| `xy2x8mpaaqknp7q2c3nnbw1ma` | Bedroom | Bedroom 2 (south side) | 11.6 |
 | `tt6gm2a0463x9wmnx7rn6gugc` | Kitchen | Kitchen | 6.5 |
 | `h26t7ky77ew74yb0pg8qqf5rd` | Bathroom | Bathroom (hall) | 4.8 |
 | `2qdmc5i9byxi79ry1pxdkqzea` | Bathroom | Bathroom (ensuite, off Bedroom 1) | 3.9 |
@@ -173,8 +178,8 @@ bedrooms/baths/closets identically, so we disambiguate by area.
 | `m8npxsuk79xy21dd09x9wtped` | Closet | Closet (off Hallway) | 0.5 |
 | `19ab05tns5h6y4qm42esqqpea` | Void | — (non-walkable) | 0.2 |
 
-`DECISION:` confirm the Bedroom 1/2 and Bathroom hall/ensuite mapping above matches how
-the demo is narrated. Full connectivity is in `docs/house_summary.md`.
+**Always reference rooms by `id` in code and on the wire; the names above are display-only.**
+Full connectivity is in `docs/house_summary.md`.
 
 ### Doorways (9) — openingId → connects
 | openingId | connects |
