@@ -5,6 +5,7 @@
 
 import SwiftUI
 import RealityKit
+import Combine
 import SafeSpotCore
 
 @MainActor
@@ -40,6 +41,33 @@ final class PanoramaModel {
     }
 
     func advance(by delta: Int) { index = (index + delta + panos.count) % max(panos.count, 1) }
+
+    // MARK: - Heading alignment (photo ↔ house)
+    // Verified offline: a model direction at azimuth `az` appears in the equirect at
+    // longitude (az - panoYaw + 90). We rotate the sphere so the photo lines up with
+    // model azimuths; `headingCalibDeg`/`headingSign` absorb the sphere-UV + mirror
+    // convention and are tuned once on device.
+    var headingCalibDeg: Double = 0
+    var headingSign: Double = -1
+
+    func panoYawDeg(_ p: Panorama) -> Double {
+        guard let q = p.rotation else { return 0 }
+        return atan2(q.z, q.w) * 2 * 180 / .pi
+    }
+
+    func alignSphere(to pano: Panorama) {
+        let deg = headingSign * panoYawDeg(pano) + headingCalibDeg
+        sphere.orientation = simd_quatf(angle: Float(deg * .pi / 180), axis: SIMD3<Float>(0, 1, 0))
+    }
+
+    /// Current look direction as a model-space azimuth (degrees).
+    var viewAzimuthDeg: Double { (90 - yaw * 180 / .pi) }
+
+    /// Azimuth (deg) from the current scan point to a model position.
+    func azimuthDeg(to p: Vector3) -> Double {
+        guard let c = current else { return 0 }
+        return atan2(p.y - c.position.y, p.x - c.position.x) * 180 / .pi
+    }
 
     // MARK: - DEBUG demo guidance (stand-in for the backend planner/router, Phase E).
     // Fixture safe targets derived from the real data + a BFS over scan-point
@@ -133,7 +161,10 @@ struct PanoramaView: View {
     @State private var fade: Double = 0
     @State private var plan: PanoramaModel.DemoPlan?
     @State private var routeStep = 0
+    @State private var headingTick = 0
+    @State private var showCalib = false
     private let hazards = ["Tornado", "Earthquake", "Fire"]
+    private let tick = Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -163,6 +194,29 @@ struct PanoramaView: View {
 
             // Cross-fade overlay while swapping panoramas.
             Color.black.opacity(fade).ignoresSafeArea().allowsHitTesting(false)
+
+            // Floating directional arrow toward the safe spot, composited over the photo.
+            if let m = model, let p = plan, p.hazard != "Earthquake",
+               let targetIdx = p.routePanoIndices.last, m.panos.indices.contains(targetIdx) {
+                let _ = headingTick
+                let target = m.panos[targetIdx].position
+                let rel = m.azimuthDeg(to: target) - m.viewAzimuthDeg
+                let dist = Int((hypot(target.x - (m.current?.position.x ?? 0),
+                                      target.y - (m.current?.position.y ?? 0))).rounded())
+                VStack(spacing: 6) {
+                    Image(systemName: "location.north.fill")
+                        .font(.system(size: 70, weight: .bold))
+                        .foregroundStyle(.green)
+                        .rotationEffect(.degrees(rel))
+                        .shadow(color: .black.opacity(0.6), radius: 6)
+                    Text("\(dist) m to safe spot")
+                        .font(.caption.bold()).foregroundStyle(.white)
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(.black.opacity(0.5), in: Capsule())
+                }
+                .allowsHitTesting(false)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            }
 
             // Minimap: tap a dot to move there.
             if let m = model {
@@ -225,7 +279,27 @@ struct PanoramaView: View {
                 }
             }
             .padding(.bottom, 150)
+
+            // Debug: one-time heading calibration (align the photo to the house).
+            if showCalib, let m = model {
+                HStack(spacing: 8) {
+                    Text("align").font(.caption2).foregroundStyle(.white)
+                    Button("◂15°") { m.headingCalibDeg -= 15; reAlign(m) }
+                    Button("▸15°") { m.headingCalibDeg += 15; reAlign(m) }
+                    Button("flip") { m.headingSign *= -1; reAlign(m) }
+                }
+                .font(.caption2).buttonStyle(.bordered).tint(.white)
+                .padding(6).background(.black.opacity(0.6), in: Capsule())
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .padding(.trailing, 12).padding(.bottom, 300)
+            }
         }
+        .onReceive(tick) { _ in headingTick &+= 1 }
+        .onLongPressGesture { showCalib.toggle() }
+    }
+
+    private func reAlign(_ m: PanoramaModel) {
+        if let pano = m.current { m.alignSphere(to: pano) }
     }
 
     private func startHazard(_ h: String) {
@@ -263,6 +337,7 @@ struct PanoramaView: View {
         withAnimation(.easeIn(duration: 0.15)) { fade = 1 }
         if let mat = await m.material(for: pano) {
             m.sphere.model?.materials = [mat]
+            m.alignSphere(to: pano)
             status = "Scan \(pano.label ?? "?") • \(roomLabel(pano))"
         } else {
             status = "Missing panorama image for \(pano.id)"
@@ -313,16 +388,13 @@ struct Minimap: View {
                     ctx.fill(path, with: .color(Color.white.opacity(0.22)))
                     ctx.stroke(path, with: .color(Color.white.opacity(0.55)), lineWidth: 1)
                 }
-                // Route polyline + safe target ring.
-                if route.count >= 2 {
-                    var rp = Path()
-                    rp.addLines(route.map { project(panos[$0].position.x, panos[$0].position.y, in: size) })
-                    ctx.stroke(rp, with: .color(.green), style: StrokeStyle(lineWidth: 2.5, lineJoin: .round))
-                }
+                // Safe-spot destination: a glowing green ring (no route line).
                 if let target = route.last {
                     let c = project(panos[target].position.x, panos[target].position.y, in: size)
-                    let rect = CGRect(x: c.x - 8, y: c.y - 8, width: 16, height: 16)
-                    ctx.stroke(Path(ellipseIn: rect), with: .color(.green), lineWidth: 2)
+                    for (r, a) in [(11.0, 0.25), (8.0, 0.5), (5.0, 1.0)] {
+                        let rect = CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)
+                        ctx.fill(Path(ellipseIn: rect), with: .color(.green.opacity(a)))
+                    }
                 }
                 for (i, p) in panos.enumerated() {
                     let c = project(p.position.x, p.position.y, in: size)
