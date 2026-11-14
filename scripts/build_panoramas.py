@@ -17,7 +17,8 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "data/assets/skybox"
 OUT = ROOT / "ios/SafeSpot/SafeSpot/Resources/panoramas"
-W, H = 2048, 1024
+# Source cube faces are 4096x4096; use a high-res equirect so the photos stay sharp.
+W, H = 4096, 2048
 # direction -> face file index
 M = {"+Z": 0, "+X": 1, "+Y": 2, "-Z": 3, "-X": 4, "-Y": 5}
 
@@ -58,7 +59,7 @@ def main():
             m = faceidx == i
             s = (sf[m]*(fw-1)).astype(int); t = (tf[m]*(fh-1)).astype(int)
             out[m] = faces[i][t, s]
-        Image.fromarray(out).save(OUT / f"{pid}.jpg", quality=85)
+        Image.fromarray(out).save(OUT / f"{pid}.jpg", quality=92)
         done += 1
         print("wrote", pid)
     print(f"\n{done}/{len(panos)} panoramas -> {OUT.relative_to(ROOT)}")

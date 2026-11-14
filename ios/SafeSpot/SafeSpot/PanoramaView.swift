@@ -41,6 +41,71 @@ final class PanoramaModel {
 
     func advance(by delta: Int) { index = (index + delta + panos.count) % max(panos.count, 1) }
 
+    // MARK: - DEBUG demo guidance (stand-in for the backend planner/router, Phase E).
+    // Fixture safe targets derived from the real data + a BFS over scan-point
+    // neighbors. The real Plan will come from POST /plan.
+
+    struct DemoPlan {
+        let hazard: String
+        let targetRoomId: String
+        let routePanoIndices: [Int]   // from current scan to the safe scan
+        let instruction: String
+    }
+
+    /// Fixture target room per hazard (matches CLAUDE.md safe-spot logic for this house).
+    private func targetRoom(for hazard: String) -> String {
+        switch hazard {
+        case "Tornado":    return "3m54yff1z7crxaywd8if9rb0d"   // interior closet off Bedroom 1: no windows, no exterior walls
+        case "Fire":       return "613htqkzf66zz7hf7n8kzszed"   // Living Room: has the exterior exit
+        default:           return currentRoomId() ?? "3m54yff1z7crxaywd8if9rb0d"  // Earthquake: cover in place
+        }
+    }
+
+    func currentRoomId() -> String? { current?.anchor?.room?.id }
+
+    private func panoIndexMap() -> [String: Int] {
+        Dictionary(uniqueKeysWithValues: panos.enumerated().map { ($0.element.id, $0.offset) })
+    }
+
+    private func firstPanoIndex(inRoom roomId: String) -> Int? {
+        panos.firstIndex { $0.anchor?.room?.id == roomId }
+    }
+
+    /// BFS over scan-point neighbours.
+    private func route(from startIdx: Int, to targetIdx: Int) -> [Int] {
+        let idxOf = panoIndexMap()
+        var prev = [Int: Int]()
+        var seen = Set([startIdx])
+        var queue = [startIdx]
+        while !queue.isEmpty {
+            let cur = queue.removeFirst()
+            if cur == targetIdx { break }
+            for nid in panos[cur].anchor?.neighbors ?? [] {
+                guard let ni = idxOf[nid], !seen.contains(ni) else { continue }
+                seen.insert(ni); prev[ni] = cur; queue.append(ni)
+            }
+        }
+        guard seen.contains(targetIdx) else { return [] }
+        var path = [targetIdx]; var c = targetIdx
+        while c != startIdx, let p = prev[c] { path.append(p); c = p }
+        return path.reversed()
+    }
+
+    func demoPlan(for hazard: String) -> DemoPlan {
+        let targetRoomId = targetRoom(for: hazard)
+        let targetIdx = firstPanoIndex(inRoom: targetRoomId) ?? index
+        let r = (hazard == "Earthquake") ? [index] : route(from: index, to: targetIdx)
+        let roomName = roomTypeById[targetRoomId] ?? "safe room"
+        let instruction: String
+        switch hazard {
+        case "Tornado":    instruction = "Tornado — go to the \(roomName) (interior, no windows). Get under cover."
+        case "Fire":       instruction = "Fire — head to the \(roomName) and out the exterior door."
+        default:           instruction = "Earthquake — take cover here now. Move to safety after the shaking stops."
+        }
+        return DemoPlan(hazard: hazard, targetRoomId: targetRoomId,
+                        routePanoIndices: r, instruction: instruction)
+    }
+
     private func updateCamera() {
         let cp = cos(pitch), sp = sin(pitch)
         let fwd = SIMD3<Float>(Float(cp * sin(yaw)), Float(sp), Float(-cp * cos(yaw)))
@@ -66,6 +131,9 @@ struct PanoramaView: View {
     @State private var lastLook: CGSize = .zero
     @State private var status = "Loading…"
     @State private var fade: Double = 0
+    @State private var plan: PanoramaModel.DemoPlan?
+    @State private var routeStep = 0
+    private let hazards = ["Tornado", "Earthquake", "Fire"]
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -101,7 +169,8 @@ struct PanoramaView: View {
                 VStack {
                     HStack {
                         Spacer()
-                        Minimap(graph: m.graph, panos: m.panos, currentIndex: m.index) { i in
+                        Minimap(graph: m.graph, panos: m.panos, currentIndex: m.index,
+                                route: plan?.routePanoIndices ?? []) { i in
                             guard i != m.index else { return }
                             m.index = i
                             Task { await load(m, index: i) }
@@ -116,20 +185,66 @@ struct PanoramaView: View {
                 }
             }
 
-            VStack(spacing: 12) {
+            VStack(spacing: 10) {
                 Text(status)
                     .font(.caption.monospaced())
                     .padding(8)
                     .background(.black.opacity(0.55))
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                HStack {
-                    Button { step(-1) } label: { label("◀ Prev") }
-                    Button { step(1) } label: { label("Next ▶") }
+
+                if let p = plan {
+                    VStack(spacing: 8) {
+                        Text(p.instruction)
+                            .font(.subheadline.bold())
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                        if p.hazard != "Earthquake" && p.routePanoIndices.count > 1 {
+                            let atEnd = routeStep >= p.routePanoIndices.count - 1
+                            Button { nextRouteStep(p) } label: {
+                                label(atEnd ? "You're at the safe spot ✓" : "Go ▶  (step \(routeStep + 1)/\(p.routePanoIndices.count))")
+                            }
+                            .disabled(atEnd)
+                        }
+                    }
+                    .padding(12)
+                    .frame(maxWidth: 360)
+                    .background(.green.opacity(0.25), in: RoundedRectangle(cornerRadius: 12))
+                }
+
+                HStack(spacing: 10) {
+                    ForEach(hazards, id: \.self) { h in
+                        Button { startHazard(h) } label: {
+                            Text(h).font(.subheadline.bold())
+                                .padding(.horizontal, 14).padding(.vertical, 10)
+                                .background(.ultraThinMaterial, in: Capsule())
+                                .foregroundStyle(.white)
+                        }
+                    }
                 }
             }
-            .padding(.bottom, 230)
+            .padding(.bottom, 150)
         }
+    }
+
+    private func startHazard(_ h: String) {
+        guard let m = model else { return }
+        let p = m.demoPlan(for: h)
+        plan = p
+        routeStep = 0
+        // Jump to the start of the route (current scan).
+        if let first = p.routePanoIndices.first, first != m.index {
+            m.index = first; Task { await load(m, index: first) }
+        }
+    }
+
+    private func nextRouteStep(_ p: PanoramaModel.DemoPlan) {
+        guard let m = model, routeStep < p.routePanoIndices.count - 1 else { return }
+        routeStep += 1
+        let idx = p.routePanoIndices[routeStep]
+        m.index = idx
+        Task { await load(m, index: idx) }
     }
 
     private func label(_ s: String) -> some View {
@@ -166,6 +281,7 @@ struct Minimap: View {
     let graph: HouseGraph
     let panos: [Panorama]
     let currentIndex: Int
+    var route: [Int] = []
     let onSelect: (Int) -> Void
 
     private var bounds: (minX: Double, maxX: Double, minY: Double, maxY: Double) {
@@ -196,6 +312,17 @@ struct Minimap: View {
                     path.closeSubpath()
                     ctx.fill(path, with: .color(Color.white.opacity(0.22)))
                     ctx.stroke(path, with: .color(Color.white.opacity(0.55)), lineWidth: 1)
+                }
+                // Route polyline + safe target ring.
+                if route.count >= 2 {
+                    var rp = Path()
+                    rp.addLines(route.map { project(panos[$0].position.x, panos[$0].position.y, in: size) })
+                    ctx.stroke(rp, with: .color(.green), style: StrokeStyle(lineWidth: 2.5, lineJoin: .round))
+                }
+                if let target = route.last {
+                    let c = project(panos[target].position.x, panos[target].position.y, in: size)
+                    let rect = CGRect(x: c.x - 8, y: c.y - 8, width: 16, height: 16)
+                    ctx.stroke(Path(ellipseIn: rect), with: .color(.green), lineWidth: 2)
                 }
                 for (i, p) in panos.enumerated() {
                     let c = project(p.position.x, p.position.y, in: size)
