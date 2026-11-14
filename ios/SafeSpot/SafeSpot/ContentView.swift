@@ -4,8 +4,26 @@
 import SwiftUI
 
 struct ContentView: View {
+    enum Mode: String, CaseIterable { case photo = "Photo", walk = "Walk", overhead = "Overhead" }
+    @State private var mode: Mode = .photo
+
     var body: some View {
-        HouseView()
+        ZStack(alignment: .top) {
+            switch mode {
+            case .photo: PanoramaView()
+            case .walk: FirstPersonView()
+            case .overhead: HouseView()
+            }
+
+            Picker("Mode", selection: $mode) {
+                ForEach(Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 280)
+            .padding(6)
+            .background(.ultraThinMaterial, in: Capsule())
+            .padding(.top, 60)
+        }
     }
 }
 

@@ -171,6 +171,11 @@ public struct HouseGraph: Sendable {
         doorways.contains { Set($0.roomIds) == Set([a, b]) }
     }
 
+    /// The walkable room whose polygon contains this floor point, if any.
+    public func room(containing p: Point2D) -> RoomNode? {
+        rooms.first { $0.isWalkable && $0.polygon.count >= 3 && Geometry.contains($0.polygon, p) }
+    }
+
     private static func group(_ items: [OpeningInfo],
                               _ key: (OpeningInfo) -> [String]) -> [String: [String]] {
         var out: [String: [String]] = [:]
