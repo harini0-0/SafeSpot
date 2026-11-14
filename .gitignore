@@ -3,6 +3,10 @@ xcuserdata/
 DerivedData/
 *.xcuserstate
 build/
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
 # Python
 .venv/
 scripts/.venv/
