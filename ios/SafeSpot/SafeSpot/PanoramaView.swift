@@ -27,9 +27,8 @@ final class PanoramaModel {
         roomTypeById = Dictionary(uniqueKeysWithValues: house.graph.rooms.map { ($0.id, $0.type) })
         graph = house.graph
         camera.camera.fieldOfViewInDegrees = 75
-        // Big inward-facing sphere; negative x scale shows the texture from the inside.
-        sphere.components.set(ModelComponent(mesh: .generateSphere(radius: 50), materials: []))
-        sphere.scale = SIMD3<Float>(-1, 1, 1)
+        // Seamless inward sphere (no mirror hack) so the equirect doesn't double at the seam.
+        sphere.components.set(ModelComponent(mesh: SkySphere.make(radius: 50), materials: []))
         updateCamera()
     }
 
@@ -190,6 +189,7 @@ final class PanoramaModel {
         guard let tex = try? await TextureResource(contentsOf: url) else { return nil }
         var m = UnlitMaterial()
         m.color = .init(tint: .white, texture: .init(tex))
+        m.faceCulling = .none
         return m
     }
 
@@ -448,6 +448,8 @@ struct Minimap: View {
     let panos: [Panorama]
     let currentIndex: Int
     var route: [Int] = []
+    /// Camera yaw (radians, model heading) — draws a facing arrow instead of a dot.
+    var headingRad: Double? = nil
     let onSelect: (Int) -> Void
     /// When set (live tracking), a tap reports the model point instead of selecting a scan.
     var onTapModel: ((Point2D) -> Void)? = nil
@@ -500,10 +502,21 @@ struct Minimap: View {
                 }
                 for (i, p) in panos.enumerated() {
                     let c = project(p.position.x, p.position.y, in: size)
-                    let rad: CGFloat = (i == currentIndex) ? 6 : 3.5
-                    let rect = CGRect(x: c.x - rad, y: c.y - rad, width: rad * 2, height: rad * 2)
-                    let color: Color = (i == currentIndex) ? Color.yellow : Color.white.opacity(0.85)
-                    ctx.fill(Path(ellipseIn: rect), with: .color(color))
+                    if i == currentIndex, let hr = headingRad {
+                        // Facing arrow: model forward (sin,cos) -> screen (sin,-cos).
+                        let dx = CGFloat(sin(hr)), dy = CGFloat(-cos(hr))
+                        let L: CGFloat = 11, W: CGFloat = 6
+                        let tip = CGPoint(x: c.x + dx * L, y: c.y + dy * L)
+                        let b1 = CGPoint(x: c.x - dx * L * 0.3 - dy * W, y: c.y - dy * L * 0.3 + dx * W)
+                        let b2 = CGPoint(x: c.x - dx * L * 0.3 + dy * W, y: c.y - dy * L * 0.3 - dx * W)
+                        var arrow = Path(); arrow.move(to: tip); arrow.addLine(to: b1); arrow.addLine(to: b2); arrow.closeSubpath()
+                        ctx.fill(arrow, with: .color(.yellow))
+                    } else {
+                        let rad: CGFloat = (i == currentIndex) ? 6 : 3.5
+                        let rect = CGRect(x: c.x - rad, y: c.y - rad, width: rad * 2, height: rad * 2)
+                        let color: Color = (i == currentIndex) ? Color.yellow : Color.white.opacity(0.85)
+                        ctx.fill(Path(ellipseIn: rect), with: .color(color))
+                    }
                 }
             }
             .contentShape(Rectangle())
