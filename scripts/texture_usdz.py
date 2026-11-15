@@ -8,10 +8,13 @@ Run from the folder holding house.usdc + the <base>_NNN.jpg atlases:
 Reads only; writes house_final.usdc (temp) and the output usdz.
 """
 import sys
-from pxr import Usd, UsdShade, Sdf, UsdUtils
+from pxr import Usd, UsdShade, Sdf, UsdUtils, UsdGeom
 
 base, src, out = sys.argv[1], sys.argv[2], sys.argv[3]
 stage = Usd.Stage.Open(src)
+# ModelIO exports metersPerUnit=0.01 (cm) but the coordinates are in metres, which
+# makes RealityKit render the house 100x too small. The data is metres -> declare 1.
+UsdGeom.SetStageMetersPerUnit(stage, 1.0)
 bound = 0
 for i in range(20):
     mpath = f"/house/Materials/_{base}_{i:03d}_jpg"
