@@ -106,47 +106,74 @@ window.addEventListener("resize", resize);
 // model (x,y) -> world (x, 0..h, -y)
 function W(x, y, h = 0) { return new THREE.Vector3(x, h, -y); }
 
-const COLORS = { normal: 0x24465f, current: 0x2f6fd0, target: 0x27ae60, blocked: 0xc0392b, nonnav: 0x1a2735 };
-function stateOf(id, rm) {
-  if (id === currentRoom) return "current";
-  if (plan && plan.target && plan.target.roomId === id && !plan.takeCover) return "target";
-  if (blocked.has(id)) return "blocked";
-  return rm && rm.navigable === false ? "nonnav" : "normal";
+function roomColor(rm) {
+  const id = rm.roomId;
+  if (id === currentRoom) return 0x2f6fd0;                                   // blue: you
+  if (plan && plan.target && plan.target.roomId === id && !plan.takeCover) return 0x27ae60; // green: target
+  if (blocked.has(id)) return 0xc0392b;                                      // red: blocked
+  return rm._color;                                                         // distinct per-room base
+}
+
+function makeLabel(text) {
+  const c = document.createElement("canvas"); c.width = 256; c.height = 64;
+  const g = c.getContext("2d");
+  g.font = "bold 30px system-ui"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.lineWidth = 6; g.strokeStyle = "rgba(0,0,0,0.85)"; g.strokeText(text, 128, 32);
+  g.fillStyle = "#ffffff"; g.fillText(text, 128, 32);
+  const tex = new THREE.CanvasTexture(c);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+  s.scale.set(2.0, 0.5, 1); return s;
 }
 
 function buildHouse() {
-  for (const rm of rooms) {
+  rooms.forEach((rm, idx) => {
+    // distinct base color per room (greyed if non-navigable, e.g. Void)
+    rm._color = rm.navigable === false ? 0x2a3340
+      : new THREE.Color().setHSL((idx * 0.618) % 1, 0.55, 0.5).getHex();
     const poly = rm.polygon;
-    // floor
+
+    // floor (opaque, distinct color so rooms read clearly from above)
     const shape = new THREE.Shape();
     poly.forEach((p, i) => i ? shape.lineTo(p.x, p.y) : shape.moveTo(p.x, p.y));
-    const fgeo = new THREE.ShapeGeometry(shape);
-    const fmat = new THREE.MeshBasicMaterial({ color: COLORS.normal, side: THREE.DoubleSide });
-    const floor = new THREE.Mesh(fgeo, fmat);
+    const floor = new THREE.Mesh(new THREE.ShapeGeometry(shape),
+      new THREE.MeshBasicMaterial({ color: rm._color, side: THREE.DoubleSide }));
     floor.rotation.x = -Math.PI / 2;      // XY shape -> XZ floor (world z = -y)
     floor.userData.roomId = rm.roomId;
     scene.add(floor);
     roomMeshes[rm.roomId] = floor; floorMeshes.push(floor);
-    // walls (semi-transparent so you can see the layout)
-    const wmat = new THREE.MeshBasicMaterial({ color: 0x3a526b, transparent: true,
-      opacity: 0.22, side: THREE.DoubleSide });
+
+    // crisp dark room boundary on the floor (clear separation between rooms)
+    const outline = poly.map(p => W(p.x, p.y, 0.03));
+    outline.push(W(poly[0].x, poly[0].y, 0.03));
+    scene.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(outline),
+      new THREE.LineBasicMaterial({ color: 0x0b0f14 })));
+
+    // low, subtle walls (short so the dollhouse stays readable from above)
+    const wmat = new THREE.MeshBasicMaterial({ color: 0x1b2430, transparent: true,
+      opacity: 0.35, side: THREE.DoubleSide });
     for (let i = 0; i < poly.length; i++) {
-      const a = poly[i], b = poly[(i + 1) % poly.length];
-      const v = [];
+      const a = poly[i], b = poly[(i + 1) % poly.length], v = [];
       const A = W(a.x, a.y, 0), B = W(b.x, b.y, 0), At = W(a.x, a.y, WALL_H), Bt = W(b.x, b.y, WALL_H);
       [A, B, Bt, A, Bt, At].forEach(p => v.push(p.x, p.y, p.z));
       const g = new THREE.BufferGeometry();
       g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3));
       scene.add(new THREE.Mesh(g, wmat));
     }
-  }
+
+    // room label floating above the floor
+    let cx = 0, cy = 0; poly.forEach(p => { cx += p.x; cy += p.y; });
+    cx /= poly.length; cy /= poly.length;
+    const label = makeLabel(rm.type);
+    label.position.copy(W(cx, cy, 1.3));
+    scene.add(label);
+  });
   updateColors();
 }
 
 function updateColors() {
   for (const rm of rooms) {
     const m = roomMeshes[rm.roomId];
-    if (m) m.material.color.setHex(COLORS[stateOf(rm.roomId, rm)]);
+    if (m) m.material.color.setHex(roomColor(rm));
   }
 }
 
@@ -240,7 +267,11 @@ async function loadHouse() {
     }));
     bounds = { minX, minY, maxX, maxY };
     buildHouse();
-    eye.set((minX + maxX) / 2, 1.5, -(minY + maxY) / 2);   // start at house center
+    // start with a dollhouse view (above + angled down) so rooms read clearly
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    const span = Math.max(maxX - minX, maxY - minY);
+    eye.set(cx, span * 1.1, -cy + span * 0.55);
+    yaw = 0; pitch = -0.95;
     document.getElementById("status").textContent = "ready";
     resize(); connectPlanWS(); animate();
   } catch (e) {
