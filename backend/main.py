@@ -16,6 +16,10 @@ The damage/voice agents (model-backed) plug in next via agents/model.py.
 
 from __future__ import annotations
 
+import os
+import threading
+import uuid
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -33,6 +37,7 @@ GRAPH: HouseGraph = load_house_graph()
 STORE = RoomStateStore()
 SESSION = Session()
 WS = ConnectionManager()
+LAST_VALID_PLAN: Optional[Plan] = None
 
 
 def _plan_now() -> Plan:
@@ -44,6 +49,48 @@ def _plan_now() -> Plan:
         room_states=STORE.snapshot(),
         shaking=SESSION.shaking,
     )
+
+
+def _holding_plan(hazard: Optional[Hazard]) -> Plan:
+    """A safe empty plan when planning fails and there is no last-valid plan."""
+    return Plan(
+        planId=str(uuid.uuid4()),
+        hazard=hazard or Hazard.tornado,
+        target=None,
+        waypoints=[],
+        reasons=["Planner temporarily unavailable; holding last known guidance."],
+        takeCover=False,
+        generatedAt=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    )
+
+
+def _safe_plan() -> Plan:
+    """Compute the current plan, but never fail: on error keep the last valid plan
+    (CLAUDE.md Block 4 — a failed call keeps the last valid plan)."""
+    global LAST_VALID_PLAN
+    try:
+        plan = _plan_now()
+        LAST_VALID_PLAN = plan
+        return plan
+    except Exception:  # noqa: BLE001 - robustness: never break the live route
+        return LAST_VALID_PLAN or _holding_plan(SESSION.hazard)
+
+
+def _prewarm_models() -> None:
+    from agents.model import get_agent_model
+
+    try:
+        get_agent_model("DAMAGE_MODEL", "qwen2.5:7b").invoke("ok")
+    except Exception:  # noqa: BLE001
+        pass
+
+
+@app.on_event("startup")
+def _startup() -> None:
+    # Optionally load the (slow) damage model into RAM before the demo so the
+    # first /interpret isn't a cold start. Off by default; set PREWARM_MODELS=1.
+    if os.getenv("PREWARM_MODELS", "").lower() in ("1", "true", "yes"):
+        threading.Thread(target=_prewarm_models, daemon=True).start()
 
 
 @app.get("/health")
@@ -76,7 +123,7 @@ def post_plan(req: PlanRequest) -> Plan:
         if event.roomId in GRAPH.rooms:
             STORE.apply_event(event)
     SESSION.set_context(req.position, req.hazard, req.shaking)
-    plan = _plan_now()
+    plan = _safe_plan()
     SESSION.last_signature = plan_signature(plan)
     return plan
 
@@ -116,7 +163,7 @@ def _route_state() -> dict:
     """Summary of the current plan for the voice agent (names, not raw ids)."""
     if not SESSION.active():
         return {"active": False}
-    plan = _plan_now()
+    plan = _safe_plan()
     target_room = None
     if plan.target and plan.target.roomId in GRAPH.rooms:
         target_room = GRAPH.rooms[plan.target.roomId].type
@@ -143,7 +190,7 @@ async def _apply_events_and_replan(events: list[DamageEvent]) -> Optional[Plan]:
             STORE.apply_event(event)
     if not SESSION.active():
         return None
-    plan = _plan_now()
+    plan = _safe_plan()
     signature = plan_signature(plan)
     if signature == SESSION.last_signature:
         return None
