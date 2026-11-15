@@ -5,6 +5,7 @@
 
 import SwiftUI
 import RealityKit
+import ARKit
 import Combine
 import SafeSpotCore
 
@@ -206,7 +207,10 @@ struct PanoramaView: View {
     @State private var plan: PanoramaModel.DemoPlan?
     @State private var headingTick = 0
     @State private var showCalib = false
+    @State private var live = false
+    @State private var locate: LocateSession?
     private let hazards = ["Tornado", "Earthquake", "Fire"]
+    private let tick = Timer.publish(every: 1.0 / 20.0, on: .main, in: .common).autoconnect()
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -234,8 +238,26 @@ struct PanoramaView: View {
                     .onEnded { _ in lastLook = .zero }
             )
 
+            // Keep the ARKit session alive (frames only flow when its view exists).
+            if live, let s = locate {
+                ARViewHost(arView: s.ar.arView).frame(width: 1, height: 1).opacity(0.01)
+                    .allowsHitTesting(false)
+            }
+
             // Cross-fade overlay while swapping panoramas.
             Color.black.opacity(fade).ignoresSafeArea().allowsHitTesting(false)
+
+            // Live-tracking align guide (big, centred).
+            if live, let s = locate, s.mode != .tracking {
+                VStack(spacing: 10) {
+                    Image(systemName: "hand.tap.fill").font(.system(size: 44)).foregroundStyle(.white)
+                    Text(alignPrompt(s)).font(.title3.bold()).multilineTextAlignment(.center)
+                        .foregroundStyle(.white).padding(.horizontal, 24)
+                }
+                .padding(24).background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 16))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .allowsHitTesting(false)
+            }
 
             // Floating directional arrow toward the safe spot, composited over the photo.
             if let m = model, let p = plan, p.hazard != "Earthquake",
@@ -269,10 +291,11 @@ struct PanoramaView: View {
                         Minimap(graph: m.graph, panos: m.panos, currentIndex: m.index,
                                 route: plan?.routePanoIndices ?? [],
                                 onSelect: { i in
-                                    guard i != m.index else { return }
+                                    guard !live, i != m.index else { return }
                                     m.index = i
                                     Task { await load(m, index: i) }
-                                })
+                                },
+                                onTapModel: live ? { p in locate?.tap(p) } : nil)
                         .frame(width: 180, height: 140)
                         .padding(8)
                         .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 10))
@@ -302,12 +325,18 @@ struct PanoramaView: View {
                         .background(.green.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
                 }
 
-                // Movement: turn with a drag, then walk forward toward where you look.
+                // Movement: Live (real walking) or manual turn + forward.
                 HStack(spacing: 12) {
+                    Button { toggleLive() } label: {
+                        Text(live ? "📍 Live ON" : "📍 Go Live").font(.subheadline.bold())
+                            .padding(.horizontal, 14).padding(.vertical, 10)
+                            .background(live ? AnyShapeStyle(.green.opacity(0.6)) : AnyShapeStyle(.ultraThinMaterial), in: Capsule())
+                            .foregroundStyle(.white)
+                    }
                     Button { moveBack() } label: { label("◀ Back") }
-                        .disabled(model?.history.isEmpty ?? true)
+                        .disabled(live || (model?.history.isEmpty ?? true))
                     Button { moveForward() } label: { label("Forward ▶") }
-                        .disabled(model?.forwardIndex() == nil)
+                        .disabled(live || model?.forwardIndex() == nil)
                 }
 
                 HStack(spacing: 10) {
@@ -338,6 +367,29 @@ struct PanoramaView: View {
             }
         }
         .onLongPressGesture { showCalib.toggle() }
+        .onReceive(tick) { _ in
+            guard live, let s = locate, let m = model, let pos = s.position else { return }
+            // Continuous heading → look; snap to the nearest scan photo as you move.
+            m.applyHeadingDeg(pos.heading)
+            let ni = m.nearestPanoIndex(x: pos.x, y: pos.y)
+            if ni != m.index { m.index = ni; Task { await load(m, index: ni) } }
+            headingTick &+= 1
+        }
+    }
+
+    private func toggleLive() {
+        live.toggle()
+        if live { let s = LocateSession(); s.start(); locate = s }
+        else { locate?.stop(); locate = nil }
+    }
+
+    private func alignPrompt(_ s: LocateSession) -> String {
+        if let e = s.loadError { return e }
+        switch s.mode {
+        case .tapHere: return "Tap the map (top-right)\nwhere you are standing"
+        case .tapToward: return "Now tap the map\ntoward where you're facing"
+        case .tracking: return ""
+        }
     }
 
     private func reAlign(_ m: PanoramaModel) {
@@ -473,6 +525,15 @@ struct Minimap: View {
             )
         }
     }
+}
+
+/// Hosts the locate module's ARView so the ARKit session actually delivers frames
+/// (an ARSession's frames only flow while its view is in the hierarchy). Kept tiny
+/// and nearly invisible — the panorama is what the user sees.
+struct ARViewHost: UIViewRepresentable {
+    let arView: ARView
+    func makeUIView(context: Context) -> ARView { arView }
+    func updateUIView(_ uiView: ARView, context: Context) {}
 }
 
 #Preview {

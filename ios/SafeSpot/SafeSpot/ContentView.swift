@@ -4,16 +4,15 @@
 import SwiftUI
 
 struct ContentView: View {
-    // Photo = photoreal 360 views; Walk = continuous first-person (live-tracked);
-    // Overhead = floor-plan dollhouse.
-    enum Mode: String, CaseIterable { case photo = "Photo", walk = "Walk", overhead = "Overhead" }
+    // Photo = photoreal 360 tour (with live tracking); Overhead = floor-plan dollhouse.
+    // (Grey free-roam "Walk" is kept in the codebase but out of the UI.)
+    enum Mode: String, CaseIterable { case photo = "Photo", overhead = "Overhead" }
     @State private var mode: Mode = .photo
 
     var body: some View {
         ZStack(alignment: .top) {
             switch mode {
             case .photo: PanoramaView()
-            case .walk: FirstPersonView()
             case .overhead: HouseView()
             }
 
@@ -21,7 +20,7 @@ struct ContentView: View {
                 ForEach(Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }
             .pickerStyle(.segmented)
-            .frame(width: 280)
+            .frame(width: 220)
             .padding(6)
             .background(.ultraThinMaterial, in: Capsule())
             .padding(.top, 60)
