@@ -16,8 +16,10 @@ The damage/voice agents (model-backed) plug in next via agents/model.py.
 
 from __future__ import annotations
 
+import json
 import os
 import threading
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -25,6 +27,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 
+from earthquake import EarthquakeMonitor
 from house_graph import HouseGraph, house_coords, load_house_graph
 from planner.rules import plan as make_plan
 from schemas import DamageEvent, DamageSource, Hazard, Plan, Position, RoomState
@@ -37,6 +40,7 @@ GRAPH: HouseGraph = load_house_graph()
 STORE = RoomStateStore()
 SESSION = Session()
 WS = ConnectionManager()
+MONITOR = EarthquakeMonitor()
 LAST_VALID_PLAN: Optional[Plan] = None
 
 
@@ -122,7 +126,17 @@ def post_plan(req: PlanRequest) -> Plan:
     for event in req.knownDamage:
         if event.roomId in GRAPH.rooms:
             STORE.apply_event(event)
-    SESSION.set_context(req.position, req.hazard, req.shaking)
+    # Earthquake: the shaking state is owned by the sensor state machine, not the
+    # request. Arming defaults to take-cover; the /ws/sensors stream flips it.
+    if req.hazard == Hazard.earthquake:
+        if not MONITOR.armed:
+            MONITOR.arm(now=time.monotonic())
+        shaking = MONITOR.shaking
+    else:
+        MONITOR.disarm()
+        shaking = req.shaking
+
+    SESSION.set_context(req.position, req.hazard, shaking)
     plan = _safe_plan()
     SESSION.last_signature = plan_signature(plan)
     return plan
@@ -183,11 +197,8 @@ def _route_state() -> dict:
     }
 
 
-async def _apply_events_and_replan(events: list[DamageEvent]) -> Optional[Plan]:
-    """Apply damage events to the store, re-plan, push over WS if changed."""
-    for event in events:
-        if event.roomId in GRAPH.rooms:
-            STORE.apply_event(event)
+async def _push_if_changed() -> Optional[Plan]:
+    """Re-plan from current state; push over /ws/plan only if the route changed."""
     if not SESSION.active():
         return None
     plan = _safe_plan()
@@ -197,6 +208,14 @@ async def _apply_events_and_replan(events: list[DamageEvent]) -> Optional[Plan]:
     SESSION.last_signature = signature
     await WS.broadcast(plan)
     return plan
+
+
+async def _apply_events_and_replan(events: list[DamageEvent]) -> Optional[Plan]:
+    """Apply damage events to the store, re-plan, push over WS if changed."""
+    for event in events:
+        if event.roomId in GRAPH.rooms:
+            STORE.apply_event(event)
+    return await _push_if_changed()
 
 
 class InterpretRequest(BaseModel):
@@ -237,6 +256,36 @@ def post_voice(req: VoiceRequest) -> VoiceResponse:
     from agents.voice import answer
 
     return VoiceResponse(answer=answer(req.question, _route_state))
+
+
+@app.websocket("/ws/sensors")
+async def ws_sensors(ws: WebSocket) -> None:
+    """Phone -> backend motion stream for earthquakes.
+
+    Each message: {"rms": float (G), "activity": str, "ts": str}. Feeds the
+    earthquake state machine; when shaking flips (take-cover <-> exit), re-plan and
+    push the new Plan over /ws/plan. The phone only samples; all logic is here.
+    """
+    await ws.accept()
+    try:
+        while True:
+            raw = await ws.receive_text()
+            try:
+                msg = json.loads(raw)
+                rms = float(msg.get("rms", 0.0))
+                activity = str(msg.get("activity", "unknown"))
+            except (ValueError, TypeError, json.JSONDecodeError):
+                continue  # ignore malformed samples
+            if not MONITOR.armed:
+                continue
+            changed = MONITOR.update(rms, activity, now=time.monotonic())
+            if changed is not None:
+                SESSION.shaking = MONITOR.shaking
+                await _push_if_changed()
+    except WebSocketDisconnect:
+        pass
+    except Exception:  # noqa: BLE001 - any socket error ends the connection
+        pass
 
 
 @app.websocket("/ws/plan")

@@ -12,12 +12,20 @@ Run from the backend/ directory:  python e2e_check.py
 
 from __future__ import annotations
 
+import json
 import sys
 import time
 
 from fastapi.testclient import TestClient
 
+import earthquake
 import main
+
+# Shrink the earthquake timers so the sensor-driven flip is instant in this wiring
+# check. The realistic timing logic is verified separately in earthquake.py's
+# self-test; here we only prove the /ws/sensors -> re-plan -> /ws/plan path.
+earthquake.MIN_COVER_SEC = 0.0
+earthquake.CALM_DEBOUNCE_SEC = 0.0
 
 LR = "613htqkzf66zz7hf7n8kzszed"  # Living Room
 HALL = "9hauvfhwiqt"  # Hallway
@@ -46,6 +54,7 @@ def reset() -> None:
     main.SESSION.shaking = True
     main.SESSION.last_signature = None
     main.LAST_VALID_PLAN = None
+    main.MONITOR.disarm()
 
 
 def pos(room_id: str) -> dict:
@@ -89,11 +98,17 @@ def fire_flow() -> None:
 
 def earthquake_flow() -> None:
     reset()
-    print("Earthquake from Kitchen -> cover while shaking -> exit after")
-    p = client.post("/plan", json={"position": pos(KIT), "hazard": "earthquake", "shaking": True}).json()
-    check("shaking => takeCover", p.get("takeCover") is True)
-    p2 = client.post("/plan", json={"position": pos(KIT), "hazard": "earthquake", "shaking": False}).json()
-    check("shaking stopped => route to exit", p2.get("takeCover") is False and p2.get("target") is not None)
+    print("Earthquake from Kitchen -> cover -> (sensor: calm) exit -> (aftershock) cover")
+    p = client.post("/plan", json={"position": pos(KIT), "hazard": "earthquake"}).json()
+    check("arm => takeCover", p.get("takeCover") is True)
+    with client.websocket_connect("/ws/plan") as plan_ws, client.websocket_connect("/ws/sensors") as sensor_ws:
+        sensor_ws.send_text(json.dumps({"rms": 0.02, "activity": "stationary", "ts": "2026-11-15T02:00:00Z"}))
+        stopped = plan_ws.receive_json()
+        check("calm/still => exit", stopped.get("takeCover") is False and stopped.get("target") is not None,
+              f"got {stopped.get('takeCover')}")
+        sensor_ws.send_text(json.dumps({"rms": 0.6, "activity": "stationary", "ts": "2026-11-15T02:00:05Z"}))
+        after = plan_ws.receive_json()
+        check("aftershock => back to cover", after.get("takeCover") is True, f"got {after.get('takeCover')}")
 
 
 def robustness() -> None:
