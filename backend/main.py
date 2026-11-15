@@ -22,9 +22,11 @@ import threading
 import time
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 
 from earthquake import EarthquakeMonitor
@@ -108,6 +110,50 @@ def health():
         "rooms": len(GRAPH.rooms),
         "house": {"lat": lat, "lon": lon},
     }
+
+
+@app.get("/house")
+def house():
+    """Read-only house geometry for the (tinker) web client: room polygons."""
+    return {
+        "modelId": GRAPH.model_id,
+        "rooms": [
+            {
+                "roomId": rid,
+                "type": r.type,
+                "navigable": r.navigable,
+                "polygon": [{"x": p.x, "y": p.y} for p in r.polygon],
+            }
+            for rid, r in GRAPH.rooms.items()
+        ],
+    }
+
+
+@app.get("/app", response_class=HTMLResponse)
+def web_app():
+    """Serve the self-contained 2D LAN web client (tinker only)."""
+    page = Path(__file__).parent / "web" / "index.html"
+    return HTMLResponse(page.read_text(encoding="utf-8"))
+
+
+@app.get("/app3d", response_class=HTMLResponse)
+def web_app_3d():
+    """Serve the 3D walkthrough client (tinker only)."""
+    page = Path(__file__).parent / "web" / "walk.html"
+    return HTMLResponse(page.read_text(encoding="utf-8"))
+
+
+@app.get("/web/{path:path}")
+def web_asset(path: str):
+    """Serve files under backend/web/ (e.g. the vendored three.min.js). Guards
+    against path traversal."""
+    base = (Path(__file__).parent / "web").resolve()
+    target = (base / path).resolve()
+    if base != target and base not in target.parents:
+        raise HTTPException(status_code=404)
+    if not target.is_file():
+        raise HTTPException(status_code=404)
+    return FileResponse(target)
 
 
 class PlanRequest(BaseModel):

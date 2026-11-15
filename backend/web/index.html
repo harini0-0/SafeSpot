@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Safe Spot (LAN)</title>
+<!-- Self-contained: no external scripts, fonts, or styles. Everything is inline and
+     talks only to this same backend over the LAN. No audio leaves the device. -->
+<style>
+  :root {
+    --bg: #0f1419; --panel: #1b2430; --ink: #e8eef5; --muted: #8aa0b4;
+    --accent: #4da3ff; --safe: #2ecc71; --block: #e74c3c; --cover: #f1c40f;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, system-ui, sans-serif; }
+  header { padding: 10px 14px; display: flex; justify-content: space-between;
+    align-items: center; border-bottom: 1px solid #2a3644; }
+  header h1 { font-size: 16px; margin: 0; }
+  #status { font-size: 12px; color: var(--muted); }
+  #status.ok { color: var(--safe); }
+  main { padding: 12px; max-width: 680px; margin: 0 auto; }
+  canvas { width: 100%; background: #0b0f14; border: 1px solid #2a3644;
+    border-radius: 10px; touch-action: none; display: block; }
+  .row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button { flex: 1; min-width: 90px; padding: 14px 10px; font-size: 15px;
+    border: 1px solid #2a3644; border-radius: 10px; background: var(--panel);
+    color: var(--ink); font-weight: 600; }
+  button:active { transform: scale(0.98); }
+  button.on { background: var(--accent); color: #06121f; border-color: var(--accent); }
+  button.danger.on { background: var(--block); border-color: var(--block); color: #fff; }
+  button.cover { background: var(--cover); color: #2a1e00; border-color: var(--cover); }
+  .hint { font-size: 12px; color: var(--muted); margin: 10px 2px 0; }
+  #instruction { margin-top: 12px; padding: 12px 14px; background: var(--panel);
+    border-radius: 10px; min-height: 42px; font-size: 15px; line-height: 1.4; }
+  #instruction .big { font-size: 17px; font-weight: 700; }
+  #reasons { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .eqbox { margin-top: 12px; padding: 10px 12px; border-radius: 10px;
+    background: #231d05; border: 1px solid #5a4a10; display: none; }
+  .eqbox.show { display: block; }
+  .legend { font-size: 11px; color: var(--muted); margin-top: 8px; }
+  .legend span { display: inline-block; margin-right: 12px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    vertical-align: middle; margin-right: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏠 Safe Spot — LAN</h1>
+  <span id="status">connecting…</span>
+</header>
+<main>
+  <canvas id="map" width="640" height="440"></canvas>
+  <div class="legend">
+    <span><i class="dot" style="background:#4da3ff"></i>you</span>
+    <span><i class="dot" style="background:#2ecc71"></i>target</span>
+    <span><i class="dot" style="background:#e74c3c"></i>blocked</span>
+    <span><i class="dot" style="background:#f1c40f"></i>route</span>
+  </div>
+
+  <div class="hint" id="modehint">Tap a room to set where you are.</div>
+  <div class="row">
+    <button id="modeSet" class="on" onclick="setMode('set')">📍 Set my room</button>
+    <button id="modeBlock" class="danger" onclick="setMode('block')">🚧 Block a room</button>
+  </div>
+
+  <div class="row">
+    <button onclick="chooseHazard('tornado')" id="hz-tornado">🌪️ Tornado</button>
+    <button onclick="chooseHazard('earthquake')" id="hz-earthquake">🌍 Earthquake</button>
+    <button onclick="chooseHazard('fire')" id="hz-fire">🔥 Fire</button>
+  </div>
+
+  <div class="eqbox" id="eqbox">
+    <div id="eqstatus">Earthquake mode.</div>
+    <div class="row">
+      <button id="shakeBtn" class="cover" onclick="toggleShaking()">Shaking… (tap when it STOPS)</button>
+    </div>
+    <div class="hint">Simulated shaking (no sensors used). After it stops, the
+      backend waits for the safe cover time, then routes you out.</div>
+  </div>
+
+  <div class="row">
+    <button onclick="askNext()">🔊 Where do I go next?</button>
+    <button onclick="speakLast()">🔁 Repeat</button>
+  </div>
+
+  <div id="instruction">Pick your room, then choose a hazard.</div>
+  <div id="reasons"></div>
+</main>
+
+<script>
+"use strict";
+const API = location.origin;
+const WSBASE = (location.protocol === "https:" ? "wss://" : "ws://") + location.host;
+
+let rooms = [], bounds = null, xform = null;
+let currentRoom = null, hazard = null, plan = null, mode = "set";
+let planWS = null, sensorWS = null, sensorTimer = null, shaking = false;
+let lastSpoken = "";
+
+const cv = document.getElementById("map");
+const ctx = cv.getContext("2d");
+const statusEl = document.getElementById("status");
+
+function setStatus(t, ok) { statusEl.textContent = t; statusEl.className = ok ? "ok" : ""; }
+
+// ---- load house geometry ----
+async function loadHouse() {
+  try {
+    const r = await fetch(API + "/house");
+    const data = await r.json();
+    rooms = data.rooms.filter(rm => rm.polygon && rm.polygon.length >= 3);
+    computeBounds();
+    draw();
+    setStatus("ready", true);
+    connectPlanWS();
+  } catch (e) {
+    setStatus("backend unreachable", false);
+    document.getElementById("instruction").textContent =
+      "Can't reach the backend. Make sure it's running and you're on the same Wi-Fi.";
+  }
+}
+
+function computeBounds() {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const rm of rooms) for (const p of rm.polygon) {
+    minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+    minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+  }
+  bounds = { minX, minY, maxX, maxY };
+  // size canvas to the house aspect ratio
+  const w = cv.clientWidth || 640;
+  const aspect = (maxY - minY) / (maxX - minX || 1);
+  cv.width = Math.round(w);
+  cv.height = Math.round(Math.max(260, Math.min(560, w * aspect)));
+  const m = 18;
+  const sx = (cv.width - 2 * m) / (maxX - minX || 1);
+  const sy = (cv.height - 2 * m) / (maxY - minY || 1);
+  const s = Math.min(sx, sy);
+  xform = { s, m, minX, maxY };
+}
+
+function toCanvas(p) {
+  return { x: xform.m + (p.x - xform.minX) * xform.s,
+           y: xform.m + (xform.maxY - p.y) * xform.s };
+}
+function toModel(cx, cy) {
+  return { x: (cx - xform.m) / xform.s + xform.minX,
+           y: xform.maxY - (cy - xform.m) / xform.s };
+}
+
+function roomState(rm) {
+  if (rm.roomId === currentRoom) return "current";
+  if (plan && plan.target && plan.target.roomId === rm.roomId && !plan.takeCover) return "target";
+  if (blocked.has(rm.roomId)) return "blocked";
+  return "normal";
+}
+const blocked = new Set();
+
+function draw() {
+  if (!xform) return;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  for (const rm of rooms) {
+    ctx.beginPath();
+    rm.polygon.forEach((p, i) => { const c = toCanvas(p);
+      i ? ctx.lineTo(c.x, c.y) : ctx.moveTo(c.x, c.y); });
+    ctx.closePath();
+    const st = roomState(rm);
+    ctx.fillStyle = st === "current" ? "rgba(77,163,255,0.35)"
+      : st === "target" ? "rgba(46,204,113,0.35)"
+      : st === "blocked" ? "rgba(231,76,60,0.40)"
+      : rm.navigable ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)";
+    ctx.fill();
+    ctx.strokeStyle = "#39506a"; ctx.lineWidth = 1; ctx.stroke();
+    // label
+    const cx = rm.polygon.reduce((a, p) => a + p.x, 0) / rm.polygon.length;
+    const cy = rm.polygon.reduce((a, p) => a + p.y, 0) / rm.polygon.length;
+    const c = toCanvas({ x: cx, y: cy });
+    ctx.fillStyle = "#9fb3c8"; ctx.font = "10px system-ui"; ctx.textAlign = "center";
+    ctx.fillText(rm.type, c.x, c.y);
+  }
+  // route
+  if (plan && plan.waypoints && plan.waypoints.length && !plan.takeCover) {
+    ctx.beginPath();
+    plan.waypoints.forEach((w, i) => { const c = toCanvas(w);
+      i ? ctx.lineTo(c.x, c.y) : ctx.moveTo(c.x, c.y); });
+    ctx.strokeStyle = "#f1c40f"; ctx.lineWidth = 3; ctx.stroke();
+    const last = toCanvas(plan.waypoints[plan.waypoints.length - 1]);
+    ctx.fillStyle = "#2ecc71";
+    ctx.beginPath(); ctx.arc(last.x, last.y, 6, 0, 7); ctx.fill();
+  }
+}
+
+// ---- interaction ----
+cv.addEventListener("click", (e) => {
+  const rect = cv.getBoundingClientRect();
+  const cx = (e.clientX - rect.left) * (cv.width / rect.width);
+  const cy = (e.clientY - rect.top) * (cv.height / rect.height);
+  const m = toModel(cx, cy);
+  const hit = rooms.find(rm => pointInPoly(m, rm.polygon));
+  if (!hit) return;
+  if (mode === "set") { currentRoom = hit.roomId; draw();
+    if (hazard) requestPlan(); else say("You are in the " + hit.type + ". Pick a hazard."); }
+  else { reportBlocked(hit.roomId); }
+});
+
+function pointInPoly(p, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i], b = poly[j];
+    if (((a.y > p.y) !== (b.y > p.y)) &&
+        (p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x)) inside = !inside;
+  }
+  return inside;
+}
+
+function setMode(mdl) {
+  mode = mdl;
+  document.getElementById("modeSet").classList.toggle("on", mdl === "set");
+  document.getElementById("modeBlock").classList.toggle("on", mdl === "block");
+  document.getElementById("modehint").textContent =
+    mdl === "set" ? "Tap a room to set where you are." : "Tap a room to report it blocked.";
+}
+
+// ---- backend calls ----
+async function chooseHazard(h) {
+  hazard = h;
+  for (const id of ["tornado", "earthquake", "fire"])
+    document.getElementById("hz-" + id).classList.toggle("on", id === h);
+  document.getElementById("eqbox").classList.toggle("show", h === "earthquake");
+  if (!currentRoom) { say("First tap the room you're in."); return; }
+  if (h === "earthquake") startEarthquake();
+  else stopEarthquake();
+  await requestPlan();
+}
+
+async function requestPlan() {
+  if (!currentRoom || !hazard) return;
+  const body = { position: { roomId: currentRoom, x: 0, y: 0 }, hazard };
+  try {
+    const r = await fetch(API + "/plan", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    setPlan(await r.json());
+  } catch (e) { setStatus("plan failed", false); }
+}
+
+async function reportBlocked(roomId) {
+  blocked.add(roomId); draw();
+  try {
+    await fetch(API + "/report", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId, state: "blocked", source: "tap" }) });
+    // the reroute arrives via /ws/plan; nothing else to do
+  } catch (e) {}
+}
+
+async function askNext() {
+  try {
+    const r = await fetch(API + "/voice", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: "Where do I go next?" }) });
+    const d = await r.json();
+    showInstruction(d.answer, true); say(d.answer);
+  } catch (e) {}
+}
+
+function setPlan(p) {
+  if (!p || !p.planId) return;
+  plan = p; draw();
+  const line = p.reasons && p.reasons.length ? p.reasons[0] : "Plan updated.";
+  showInstruction(p.takeCover ? "🟡 TAKE COVER — do not run." : line, true);
+  document.getElementById("reasons").textContent =
+    (p.reasons || []).join("  •  ");
+  if (hazard === "earthquake")
+    document.getElementById("eqstatus").textContent =
+      p.takeCover ? "Shaking — take cover in place." : "Shaking stopped — head to the exit.";
+  say(p.takeCover ? "Take cover where you are. Do not run." :
+      (p.reasons && p.reasons[0]) || "Route updated.");
+}
+
+// ---- websockets ----
+function connectPlanWS() {
+  try {
+    planWS = new WebSocket(WSBASE + "/ws/plan");
+    planWS.onmessage = (ev) => { try { setPlan(JSON.parse(ev.data)); } catch (e) {} };
+    planWS.onclose = () => setTimeout(connectPlanWS, 1500);
+  } catch (e) {}
+}
+
+// ---- earthquake (simulated, no sensors) ----
+function startEarthquake() {
+  shaking = true; updateShakeBtn();
+  if (!sensorWS || sensorWS.readyState > 1) {
+    sensorWS = new WebSocket(WSBASE + "/ws/sensors");
+  }
+  if (sensorTimer) clearInterval(sensorTimer);
+  sensorTimer = setInterval(() => {
+    if (!sensorWS || sensorWS.readyState !== 1) return;
+    const sample = { rms: shaking ? 0.5 : 0.02, activity: "stationary",
+      ts: new Date().toISOString() };
+    sensorWS.send(JSON.stringify(sample));
+  }, 1000);
+}
+function stopEarthquake() {
+  if (sensorTimer) { clearInterval(sensorTimer); sensorTimer = null; }
+  if (sensorWS) { try { sensorWS.close(); } catch (e) {} sensorWS = null; }
+  shaking = false;
+}
+function toggleShaking() {
+  shaking = !shaking; updateShakeBtn();
+}
+function updateShakeBtn() {
+  const b = document.getElementById("shakeBtn");
+  b.textContent = shaking ? "Shaking… (tap when it STOPS)" : "Stopped — guiding you out…";
+  b.classList.toggle("cover", shaking);
+}
+
+// ---- voice (output only; nothing sent off device) ----
+function say(text) {
+  lastSpoken = text;
+  if (!("speechSynthesis" in window)) return;
+  try { const u = new SpeechSynthesisUtterance(text); u.rate = 1.0;
+    speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}
+}
+function speakLast() { if (lastSpoken) say(lastSpoken); }
+function showInstruction(text, big) {
+  document.getElementById("instruction").innerHTML =
+    big ? '<span class="big">' + escapeHtml(text) + "</span>" : escapeHtml(text);
+}
+function escapeHtml(s) { return String(s).replace(/[&<>]/g,
+  c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
+
+window.addEventListener("resize", () => { computeBounds(); draw(); });
+loadHouse();
+</script>
+</body>
+</html>
