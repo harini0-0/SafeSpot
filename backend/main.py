@@ -23,7 +23,7 @@ from pydantic import BaseModel
 
 from house_graph import HouseGraph, house_coords, load_house_graph
 from planner.rules import plan as make_plan
-from schemas import DamageEvent, Hazard, Plan, Position, RoomState
+from schemas import DamageEvent, DamageSource, Hazard, Plan, Position, RoomState
 from state import ConnectionManager, RoomStateStore, Session, plan_signature
 
 app = FastAPI(title="Safe Spot backend", version="0.1.0")
@@ -110,6 +110,86 @@ async def post_report(event: DamageEvent) -> ReportResponse:
     SESSION.last_signature = signature
     await WS.broadcast(plan)
     return ReportResponse(ok=True, replan=plan)
+
+
+def _route_state() -> dict:
+    """Summary of the current plan for the voice agent (names, not raw ids)."""
+    if not SESSION.active():
+        return {"active": False}
+    plan = _plan_now()
+    target_room = None
+    if plan.target and plan.target.roomId in GRAPH.rooms:
+        target_room = GRAPH.rooms[plan.target.roomId].type
+    next_room = None
+    if len(plan.waypoints) > 1:
+        next_room = GRAPH.rooms[plan.waypoints[1].roomId].type
+    elif plan.waypoints:
+        next_room = GRAPH.rooms[plan.waypoints[0].roomId].type
+    return {
+        "active": True,
+        "hazard": plan.hazard.value,
+        "takeCover": plan.takeCover,
+        "targetRoom": target_room,
+        "targetKind": plan.target.kind.value if plan.target else None,
+        "nextRoom": next_room,
+        "reasons": plan.reasons,
+    }
+
+
+async def _apply_events_and_replan(events: list[DamageEvent]) -> Optional[Plan]:
+    """Apply damage events to the store, re-plan, push over WS if changed."""
+    for event in events:
+        if event.roomId in GRAPH.rooms:
+            STORE.apply_event(event)
+    if not SESSION.active():
+        return None
+    plan = _plan_now()
+    signature = plan_signature(plan)
+    if signature == SESSION.last_signature:
+        return None
+    SESSION.last_signature = signature
+    await WS.broadcast(plan)
+    return plan
+
+
+class InterpretRequest(BaseModel):
+    """Backend-internal: run the damage agent on a feed alert. Not an app-facing
+    contract endpoint (feeds are backend-side)."""
+
+    hazard: Hazard
+    alert: str
+    source: DamageSource = DamageSource.nws
+
+
+class InterpretResponse(BaseModel):
+    events: list[DamageEvent]
+    replan: Optional[Plan] = None
+
+
+@app.post("/interpret", response_model=InterpretResponse, response_model_exclude_none=True)
+async def post_interpret(req: InterpretRequest) -> InterpretResponse:
+    """Damage agent: feed alert text -> validated room states -> re-plan."""
+    from agents.damage import interpret
+
+    events = interpret(GRAPH, req.hazard, req.alert, req.source)
+    replan = await _apply_events_and_replan(events)
+    return InterpretResponse(events=events, replan=replan)
+
+
+class VoiceRequest(BaseModel):
+    question: str
+
+
+class VoiceResponse(BaseModel):
+    answer: str
+
+
+@app.post("/voice", response_model=VoiceResponse)
+def post_voice(req: VoiceRequest) -> VoiceResponse:
+    """Voice Q&A: answer from the current route state only."""
+    from agents.voice import answer
+
+    return VoiceResponse(answer=answer(req.question, _route_state))
 
 
 @app.websocket("/ws/plan")
