@@ -14,6 +14,8 @@ struct LocateTestApp: App {
                     .tabItem { Label("Floor plan", systemImage: "map") }
                 WalkLogView()
                     .tabItem { Label("Walk log", systemImage: "figure.walk") }
+                EarthquakeView()
+                    .tabItem { Label("Earthquake", systemImage: "waveform.path.ecg") }
             }
         }
     }
