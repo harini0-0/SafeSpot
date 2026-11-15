@@ -24,4 +24,8 @@ enum BackendConfig {
         c.scheme = (c.scheme == "https") ? "wss" : "ws"
         return c.url!
     }()
+
+    /// Bare host (no scheme/port) for Sanjana's EarthquakeMotionStreamer, which
+    /// builds ws://<host>:8000/ws/sensors itself.
+    static var host: String { baseURL.host ?? "localhost" }
 }

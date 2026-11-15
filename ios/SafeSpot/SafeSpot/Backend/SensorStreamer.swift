@@ -4,13 +4,8 @@
 //  shaking has stopped (→ Plan.takeCover flips false and we route to the exit).
 //
 //  The `guide`/wiring side (Harini) only START/STOPs this on entering/leaving the
-//  earthquake flow. The actual accelerometer capture + WS send belongs to Sanjana's
-//  `locate` module.
-//
-//  TODO(Sanjana): fill start()/stop() with the CoreMotion → URLSessionWebSocketTask
-//  stream to `wsBaseURL/ws/sensors` (device-motion userAcceleration at ~20 Hz).
-//  Until then this is a safe no-op: the earthquake flow still works via the backend's
-//  own USGS feed, just without this phone's impact signal.
+//  earthquake flow. The actual accelerometer capture + WS send is Sanjana's
+//  EarthquakeMotionStreamer (ported from the LocateTest app).
 
 import Foundation
 
@@ -19,19 +14,17 @@ final class SensorStreamer {
     static let shared = SensorStreamer()
     private init() {}
 
-    private(set) var running = false
+    private let streamer = EarthquakeMotionStreamer()
 
-    /// Begin streaming phone motion to `wsBaseURL/ws/sensors`.
-    func start(wsBaseURL: URL = BackendConfig.wsBaseURL) {
-        guard !running else { return }
-        running = true
-        // TODO(Sanjana): start CoreMotion capture + open WS to wsBaseURL/ws/sensors.
+    var running: Bool { streamer.isActive }
+
+    /// Begin streaming phone motion to ws://<host>:8000/ws/sensors.
+    func start(host: String = BackendConfig.host) {
+        streamer.start(host: host)
     }
 
     /// Stop streaming (shaking over / left the earthquake flow).
     func stop() {
-        guard running else { return }
-        running = false
-        // TODO(Sanjana): stop capture + close the WS.
+        streamer.stop()
     }
 }

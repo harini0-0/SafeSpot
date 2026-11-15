@@ -149,6 +149,7 @@ struct HybridTourView: View {
     @State private var backendPlan: Plan?
     @State private var takeCover = false
     @State private var speaker = AVSpeechSynthesizer()
+    @State private var voice = VoiceAsk()
     private let hazards = ["Tornado", "Earthquake", "Fire"]
     private let tick = Timer.publish(every: 1.0 / 20.0, on: .main, in: .common).autoconnect()
 
@@ -233,16 +234,22 @@ struct HybridTourView: View {
                 }
                 HStack(spacing: 8) {
                     ForEach(hazards, id: \.self) { h in
-                        Button {
-                            if h == "Earthquake" { startEarthquake() }
-                            else { stopEarthquake(); startHazard(h) }
-                        } label: { chip(h, plan?.hazard == h) }
+                        Button { startHazard(h) } label: { chip(h, plan?.hazard == h) }
                     }
                     if plan != nil { Button { if let m = model { goNextStep(m) } } label: { chip("Go ▶", false) } }
+                }
+                if plan != nil {
+                    HStack(spacing: 8) {
+                        Button { reportBlockedHere() } label: { chip("⚠︎ Blocked here", false) }
+                        Button { voice.toggle() } label: {
+                            chip(voice.listening ? "🎤 Listening…" : "🎤 Ask", voice.listening)
+                        }
+                    }
                 }
             }
             .padding(.bottom, 36)
         }
+        .onAppear { configureVoice() }
         .onReceive(tick) { _ in
             guard live, let m = model, let s = locate, let pos = s.position, !m.transitioning else { return }
             m.yaw = pos.heading * .pi / 180
@@ -334,8 +341,35 @@ struct HybridTourView: View {
 
     // MARK: hazard guidance
 
+    /// Any hazard button → the backend planner/router (POST /plan), then a /ws/plan
+    /// subscription for live re-plans (room blocked, shaking stops). Earthquake also
+    /// streams this phone's motion. Falls back to a local plan if the backend is
+    /// unreachable, so the demo still runs offline.
     private func startHazard(_ h: String) {
         guard let m = model else { return }
+        stopBackend()
+        let hazardKey = h.lowercased()
+        if h == "Earthquake" { SensorStreamer.shared.start() }
+        let client = BackendClient()
+        Task {
+            if let pos = currentPosition(m),
+               let p = try? await client.requestPlan(position: pos, hazard: hazardKey) {
+                applyBackendPlan(m, p)
+            } else {
+                localFallback(m, h)
+            }
+        }
+        // position is read fresh on each poll so a reconnect re-plans from where the
+        // user actually is.
+        let ch = PlanChannel(client: client, hazard: hazardKey,
+                             position: { currentPosition(m) },
+                             onPlan: { p in applyBackendPlan(m, p) })
+        ch.start()
+        planChannel = ch
+    }
+
+    /// Local stand-in used only when the backend can't be reached.
+    private func localFallback(_ m: TourModel, _ h: String) {
         let target = m.safeTargetIndex(for: h)
         let r = (h == "Earthquake") ? [m.index] : m.route(to: target)
         let name = m.roomTypeById[m.panos[target].anchor?.room?.id ?? ""] ?? "safe room"
@@ -343,9 +377,10 @@ struct HybridTourView: View {
         switch h {
         case "Tornado": instr = "Tornado — go to the \(name) (interior, no windows). Get under cover."
         case "Fire": instr = "Fire — head to the \(name) and out the exterior door."
-        default: instr = "Earthquake — take cover here now; move after the shaking stops."
+        default: takeCover = true; instr = "Earthquake — take cover here now; move after the shaking stops."
         }
         plan = (h, r, instr)
+        if h != "Earthquake", target != m.index { travel(m, to: target) }
     }
 
     private func goNextStep(_ m: TourModel) {
@@ -353,60 +388,54 @@ struct HybridTourView: View {
         travel(m, to: target)   // glide the whole route to the safe spot, hop by hop
     }
 
-    // MARK: earthquake (backend-driven)
-
-    /// Tap Earthquake → ask the backend for a plan, subscribe to /ws/plan for live
-    /// re-plans (shaking stops, room blocked), and stream this phone's motion.
-    private func startEarthquake() {
-        guard let m = model else { return }
-        SensorStreamer.shared.start()
-        let client = BackendClient()
-
-        // Initial plan (POST /plan). If the backend is unreachable, fail safe to
-        // "take cover in place" rather than sending anyone running during shaking.
-        Task {
-            if let pos = currentPosition(m),
-               let p = try? await client.requestPlan(position: pos, hazard: "earthquake") {
-                applyBackendPlan(m, p)
-            } else if plan?.hazard != "Earthquake" {
-                takeCover = true
-                plan = ("Earthquake", [m.index],
-                        "Earthquake — take cover here now; move after the shaking stops.")
-                speak("Take cover now. Drop, cover, and hold on. Do not run.")
-            }
-        }
-
-        // Live pushes. Captures the TourModel (a stable reference); position is read
-        // fresh on each poll so a reconnect re-plans from where the user actually is.
-        let ch = PlanChannel(client: client, hazard: "earthquake",
-                             position: { currentPosition(m) },
-                             onPlan: { p in applyBackendPlan(m, p) })
-        ch.start()
-        planChannel = ch
-    }
-
-    private func stopEarthquake() {
+    private func stopBackend() {
         planChannel?.stop(); planChannel = nil
         SensorStreamer.shared.stop()
         backendPlan = nil
         takeCover = false
     }
 
-    /// Render one Plan (CLAUDE.md rule 5: no running during shaking).
+    // MARK: one-tap damage report → reroute (/report)
+
+    /// "Blocked here" — mark the current room blocked. The backend re-plans and the
+    /// new route arrives inline and over /ws/plan (CLAUDE.md: a damaged room blocks
+    /// the whole room; the route avoids it).
+    private func reportBlockedHere() {
+        guard let m = model, let room = m.current?.anchor?.room?.id, plan != nil else { return }
+        let event = DamageEvent(roomId: room, state: "blocked", source: "tap",
+                                confidence: 1.0, timestamp: Position.now())
+        Task {
+            if let replan = try? await BackendClient().report(event) { applyBackendPlan(m, replan) }
+        }
+    }
+
+    // MARK: voice Q&A (/voice)
+
+    private func configureVoice() {
+        voice.onResult = { q in
+            Task {
+                if let answer = try? await BackendClient().ask(q) { speak(answer) }
+            }
+        }
+    }
+
+    // MARK: render a backend Plan (CLAUDE.md rule 5: no running during shaking).
+
     private func applyBackendPlan(_ m: TourModel, _ p: Plan) {
         backendPlan = p
         takeCover = p.takeCover
+        let label = p.hazard.capitalized   // "Tornado" / "Earthquake" / "Fire"
         if p.takeCover {
-            plan = ("Earthquake", [m.index],
+            plan = (label, [m.index],
                     p.reasons.first ?? "Take cover here now — drop, cover, hold on. Don't run.")
             speak(p.reasons.first ?? "Take cover now. Drop, cover, and hold on. Do not run.")
         } else {
             let target = backendTargetIndex(m, p) ?? m.index
             let r = m.route(to: target)
-            plan = ("Earthquake", r,
-                    p.reasons.first ?? "Shaking stopped — move to the exit now.")
-            speak(p.reasons.first ?? "Shaking stopped. Move to the exit now.")
-            if target != m.index { travel(m, to: target) }   // walk out automatically
+            plan = (label, r,
+                    p.reasons.first ?? "Move to the \(m.roomTypeById[m.panos[target].anchor?.room?.id ?? ""] ?? "safe spot") now.")
+            speak(p.reasons.first ?? "Move to safety now.")
+            if target != m.index { travel(m, to: target) }   // walk the route automatically
         }
     }
 

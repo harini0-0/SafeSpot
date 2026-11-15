@@ -25,14 +25,35 @@ struct BackendClient {
     /// POST /plan → the current safe target and route for this position + hazard.
     func requestPlan(position: Position, hazard: String,
                      knownDamage: [DamageEvent] = []) async throws -> Plan {
-        var req = URLRequest(url: base.appendingPathComponent("plan"))
+        try await post("plan", PlanRequest(position: position, hazard: hazard,
+                                           knownDamage: knownDamage), as: Plan.self)
+    }
+
+    private struct ReportResponse: Decodable { let ok: Bool; let replan: Plan? }
+
+    /// POST /report → apply a DamageEvent and, if the route changed, the new Plan
+    /// (also pushed over /ws/plan). Returns nil if the route is unchanged.
+    func report(_ event: DamageEvent) async throws -> Plan? {
+        try await post("report", event, as: ReportResponse.self).replan
+    }
+
+    private struct VoiceRequest: Encodable { let question: String }
+    private struct VoiceResponse: Decodable { let answer: String }
+
+    /// POST /voice → a spoken-style answer drawn only from the current route state.
+    func ask(_ question: String) async throws -> String {
+        try await post("voice", VoiceRequest(question: question), as: VoiceResponse.self).answer
+    }
+
+    private func post<B: Encodable, R: Decodable>(_ path: String, _ body: B,
+                                                  as: R.Type) async throws -> R {
+        var req = URLRequest(url: base.appendingPathComponent(path))
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.timeoutInterval = 8
-        req.httpBody = try JSONEncoder().encode(
-            PlanRequest(position: position, hazard: hazard, knownDamage: knownDamage))
+        req.httpBody = try JSONEncoder().encode(body)
         let (data, _) = try await URLSession.shared.data(for: req)
-        return try JSONDecoder().decode(Plan.self, from: data)
+        return try JSONDecoder().decode(R.self, from: data)
     }
 }
 
