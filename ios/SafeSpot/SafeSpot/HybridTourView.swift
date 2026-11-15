@@ -32,9 +32,8 @@ final class TourModel {
         let all = house.model.sections.panoramas?.panoLocations ?? []
         panos = all.sorted { (Int($0.label ?? "") ?? 0) < (Int($1.label ?? "") ?? 0) }
         roomTypeById = Dictionary(uniqueKeysWithValues: house.graph.rooms.map { ($0.id, $0.type) })
-        camera.camera.fieldOfViewInDegrees = 75
-        sphere.components.set(ModelComponent(mesh: .generateSphere(radius: 50), materials: []))
-        sphere.scale = SIMD3<Float>(-1, 1, 1)   // view the texture from the inside
+        camera.camera.fieldOfViewInDegrees = 90   // wider so the room is easy to read
+        sphere.components.set(ModelComponent(mesh: SkySphere.make(radius: 50), materials: []))
     }
 
     var current: Panorama? { panos.indices.contains(index) ? panos[index] : nil }
@@ -65,6 +64,7 @@ final class TourModel {
               let tex = try? await TextureResource(contentsOf: url) else { return nil }
         var m = UnlitMaterial()
         m.color = .init(tint: .white, texture: .init(tex))
+        m.faceCulling = .none   // seamless sphere viewed from the inside
         return m
     }
 
@@ -142,6 +142,7 @@ struct HybridTourView: View {
     @State private var live = false
     @State private var locate: LocateSession?
     @State private var tickN = 0
+    @State private var pendingRoute: [Int] = []
     private let hazards = ["Tornado", "Earthquake", "Fire"]
     private let tick = Timer.publish(every: 1.0 / 20.0, on: .main, in: .common).autoconnect()
 
@@ -187,8 +188,8 @@ struct HybridTourView: View {
                     HStack {
                         Spacer()
                         Minimap(graph: m.graph, panos: m.panos, currentIndex: m.index,
-                                route: plan?.route ?? [],
-                                onSelect: { i in if !live { glide(m, to: i) } },
+                                route: plan?.route ?? [], headingRad: m.yaw,
+                                onSelect: { i in if !live { travel(m, to: i) } },
                                 onTapModel: live ? { p in locate?.tap(p) } : nil)
                         .frame(width: 180, height: 140).padding(8)
                         .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 10))
@@ -225,7 +226,7 @@ struct HybridTourView: View {
             guard live, let m = model, let s = locate, let pos = s.position, !m.transitioning else { return }
             m.yaw = pos.heading * .pi / 180
             let ni = m.nearestPanoIndex(x: pos.x, y: pos.y)
-            if ni != m.index { glide(m, to: ni) } else { m.updateLook() }
+            if ni != m.index { travel(m, to: ni) } else { m.updateLook() }
             tickN &+= 1
         }
     }
@@ -245,6 +246,21 @@ struct HybridTourView: View {
     }
 
     // MARK: transitions
+
+    /// Travel to any scan point by gliding hop-by-hop along connected neighbours
+    /// (so the camera never cuts straight through a wall).
+    private func travel(_ m: TourModel, to target: Int) {
+        guard !m.transitioning, target != m.index else { return }
+        let r = m.route(to: target)
+        guard r.count >= 2 else { return }
+        pendingRoute = Array(r.dropFirst())   // drop current
+        advancePending(m)
+    }
+
+    private func advancePending(_ m: TourModel) {
+        guard let next = pendingRoute.first else { return }
+        glide(m, to: next)
+    }
 
     private func glide(_ m: TourModel, to target: Int) {
         guard !m.transitioning, target != m.index, m.panos.indices.contains(target) else { return }
@@ -286,6 +302,13 @@ struct HybridTourView: View {
         withAnimation(.easeOut(duration: 0.3)) { fade = 0 }
         m.transitioning = false
         status = m.current.map { m.roomLabel($0) } ?? "—"
+        // Continue a multi-hop route (minimap tap / hazard Go), one neighbour at a time.
+        if !pendingRoute.isEmpty, pendingRoute.first == target {
+            pendingRoute.removeFirst()
+            if !pendingRoute.isEmpty {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { advancePending(m) }
+            }
+        }
     }
 
     // MARK: hazard guidance
@@ -305,8 +328,8 @@ struct HybridTourView: View {
     }
 
     private func goNextStep(_ m: TourModel) {
-        guard let p = plan, let pos = p.route.firstIndex(of: m.index), pos + 1 < p.route.count else { return }
-        glide(m, to: p.route[pos + 1])
+        guard let p = plan, let target = p.route.last, target != m.index else { return }
+        travel(m, to: target)   // glide the whole route to the safe spot, hop by hop
     }
 
     private func toggleLive() {
