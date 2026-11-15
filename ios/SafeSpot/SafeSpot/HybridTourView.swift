@@ -12,6 +12,7 @@ import SwiftUI
 import RealityKit
 import ARKit
 import Combine
+import AVFoundation
 import SafeSpotCore
 
 @MainActor
@@ -143,6 +144,11 @@ struct HybridTourView: View {
     @State private var locate: LocateSession?
     @State private var tickN = 0
     @State private var pendingRoute: [Int] = []
+    // Earthquake is driven by Lavanya's backend (take cover while shaking → exit after).
+    @State private var planChannel: PlanChannel?
+    @State private var backendPlan: Plan?
+    @State private var takeCover = false
+    @State private var speaker = AVSpeechSynthesizer()
     private let hazards = ["Tornado", "Earthquake", "Fire"]
     private let tick = Timer.publish(every: 1.0 / 20.0, on: .main, in: .common).autoconnect()
 
@@ -175,6 +181,18 @@ struct HybridTourView: View {
                 ARViewHost(arView: s.ar.arView).frame(width: 1, height: 1).opacity(0.01).allowsHitTesting(false)
             }
             Color.black.opacity(fade).ignoresSafeArea().allowsHitTesting(false)
+
+            if takeCover {
+                VStack(spacing: 10) {
+                    Image(systemName: "figure.fall").font(.system(size: 54, weight: .bold))
+                    Text("TAKE COVER").font(.largeTitle.bold())
+                    Text("Drop, cover, hold on. Don't run.").font(.title3)
+                }
+                .foregroundStyle(.white).padding(28)
+                .background(.red.opacity(0.78), in: RoundedRectangle(cornerRadius: 20))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .allowsHitTesting(false)
+            }
 
             if live, let s = locate, s.mode != .tracking {
                 Text(s.mode == .tapHere ? "Tap the map where you are" : "Tap the map toward where you face")
@@ -215,7 +233,10 @@ struct HybridTourView: View {
                 }
                 HStack(spacing: 8) {
                     ForEach(hazards, id: \.self) { h in
-                        Button { startHazard(h) } label: { chip(h, plan?.hazard == h) }
+                        Button {
+                            if h == "Earthquake" { startEarthquake() }
+                            else { stopEarthquake(); startHazard(h) }
+                        } label: { chip(h, plan?.hazard == h) }
                     }
                     if plan != nil { Button { if let m = model { goNextStep(m) } } label: { chip("Go ▶", false) } }
                 }
@@ -330,6 +351,94 @@ struct HybridTourView: View {
     private func goNextStep(_ m: TourModel) {
         guard let p = plan, let target = p.route.last, target != m.index else { return }
         travel(m, to: target)   // glide the whole route to the safe spot, hop by hop
+    }
+
+    // MARK: earthquake (backend-driven)
+
+    /// Tap Earthquake → ask the backend for a plan, subscribe to /ws/plan for live
+    /// re-plans (shaking stops, room blocked), and stream this phone's motion.
+    private func startEarthquake() {
+        guard let m = model else { return }
+        SensorStreamer.shared.start()
+        let client = BackendClient()
+
+        // Initial plan (POST /plan). If the backend is unreachable, fail safe to
+        // "take cover in place" rather than sending anyone running during shaking.
+        Task {
+            if let pos = currentPosition(m),
+               let p = try? await client.requestPlan(position: pos, hazard: "earthquake") {
+                applyBackendPlan(m, p)
+            } else if plan?.hazard != "Earthquake" {
+                takeCover = true
+                plan = ("Earthquake", [m.index],
+                        "Earthquake — take cover here now; move after the shaking stops.")
+                speak("Take cover now. Drop, cover, and hold on. Do not run.")
+            }
+        }
+
+        // Live pushes. Captures the TourModel (a stable reference); position is read
+        // fresh on each poll so a reconnect re-plans from where the user actually is.
+        let ch = PlanChannel(client: client, hazard: "earthquake",
+                             position: { currentPosition(m) },
+                             onPlan: { p in applyBackendPlan(m, p) })
+        ch.start()
+        planChannel = ch
+    }
+
+    private func stopEarthquake() {
+        planChannel?.stop(); planChannel = nil
+        SensorStreamer.shared.stop()
+        backendPlan = nil
+        takeCover = false
+    }
+
+    /// Render one Plan (CLAUDE.md rule 5: no running during shaking).
+    private func applyBackendPlan(_ m: TourModel, _ p: Plan) {
+        backendPlan = p
+        takeCover = p.takeCover
+        if p.takeCover {
+            plan = ("Earthquake", [m.index],
+                    p.reasons.first ?? "Take cover here now — drop, cover, hold on. Don't run.")
+            speak(p.reasons.first ?? "Take cover now. Drop, cover, and hold on. Do not run.")
+        } else {
+            let target = backendTargetIndex(m, p) ?? m.index
+            let r = m.route(to: target)
+            plan = ("Earthquake", r,
+                    p.reasons.first ?? "Shaking stopped — move to the exit now.")
+            speak(p.reasons.first ?? "Shaking stopped. Move to the exit now.")
+            if target != m.index { travel(m, to: target) }   // walk out automatically
+        }
+    }
+
+    /// Map the backend's target/waypoints onto a scan point. Validates against the
+    /// house data (CLAUDE.md rule 3): an unknown room id falls back to coordinates,
+    /// then to the last waypoint.
+    private func backendTargetIndex(_ m: TourModel, _ p: Plan) -> Int? {
+        if let t = p.target {
+            if t.kind == "room", let rid = t.roomId,
+               let i = m.panos.firstIndex(where: { $0.anchor?.room?.id == rid }) { return i }
+            if let x = t.x, let y = t.y { return m.nearestPanoIndex(x: x, y: y) }
+        }
+        if let wp = p.waypoints.last { return m.nearestPanoIndex(x: wp.x, y: wp.y) }
+        return nil
+    }
+
+    /// The live Position to send the backend: from `locate` when tracking, otherwise
+    /// the current scan point and look direction.
+    private func currentPosition(_ m: TourModel) -> Position? {
+        if live, let p = locate?.position { return p }
+        guard let pano = m.current else { return nil }
+        var hdg = m.yaw * 180 / .pi
+        hdg = hdg.truncatingRemainder(dividingBy: 360); if hdg < 0 { hdg += 360 }
+        return Position(roomId: pano.anchor?.room?.id, x: pano.position.x, y: pano.position.y,
+                        heading: hdg, confidence: 0.6, source: .tap, timestamp: Position.now())
+    }
+
+    private func speak(_ text: String) {
+        speaker.stopSpeaking(at: .immediate)
+        let u = AVSpeechUtterance(string: text)
+        u.rate = 0.5
+        speaker.speak(u)
     }
 
     private func toggleLive() {
