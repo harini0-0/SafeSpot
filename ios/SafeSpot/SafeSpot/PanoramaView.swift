@@ -206,8 +206,6 @@ struct PanoramaView: View {
     @State private var plan: PanoramaModel.DemoPlan?
     @State private var headingTick = 0
     @State private var showCalib = false
-    @State private var live = false
-    @State private var locate: LocateSession?
     private let hazards = ["Tornado", "Earthquake", "Fire"]
 
     var body: some View {
@@ -271,11 +269,10 @@ struct PanoramaView: View {
                         Minimap(graph: m.graph, panos: m.panos, currentIndex: m.index,
                                 route: plan?.routePanoIndices ?? [],
                                 onSelect: { i in
-                                    guard !live, i != m.index else { return }
+                                    guard i != m.index else { return }
                                     m.index = i
                                     Task { await load(m, index: i) }
-                                },
-                                onTapModel: live ? { p in locate?.tap(p) } : nil)
+                                })
                         .frame(width: 180, height: 140)
                         .padding(8)
                         .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 10))
@@ -305,20 +302,12 @@ struct PanoramaView: View {
                         .background(.green.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
                 }
 
-                // Live tracking status (Sanjana's locate module).
-                if live, let s = locate {
-                    Text(liveStatus(s))
-                        .font(.caption2.monospaced()).foregroundStyle(.white)
-                        .padding(6).background(.blue.opacity(0.5), in: Capsule())
-                }
-
-                // Movement: turn with a drag, then walk forward (or go Live tracking).
+                // Movement: turn with a drag, then walk forward toward where you look.
                 HStack(spacing: 12) {
-                    Button { toggleLive() } label: { label(live ? "📍 Live" : "Virtual") }
                     Button { moveBack() } label: { label("◀ Back") }
-                        .disabled(live || (model?.history.isEmpty ?? true))
+                        .disabled(model?.history.isEmpty ?? true)
                     Button { moveForward() } label: { label("Forward ▶") }
-                        .disabled(live || model?.forwardIndex() == nil)
+                        .disabled(model?.forwardIndex() == nil)
                 }
 
                 HStack(spacing: 10) {
@@ -349,37 +338,6 @@ struct PanoramaView: View {
             }
         }
         .onLongPressGesture { showCalib.toggle() }
-        .onChange(of: locate?.position) { _, pos in
-            guard live, let pos, let m = model else { return }
-            let ni = m.nearestPanoIndex(x: pos.x, y: pos.y)
-            if ni != m.index { m.index = ni; Task { await load(m, index: ni) } }
-            m.applyHeadingDeg(pos.heading)
-            headingTick &+= 1
-        }
-    }
-
-    private func toggleLive() {
-        live.toggle()
-        if live {
-            let s = LocateSession()
-            s.start()
-            locate = s
-        } else {
-            locate?.stop()
-            locate = nil
-        }
-    }
-
-    private func liveStatus(_ s: LocateSession) -> String {
-        if let e = s.loadError { return e }
-        switch s.mode {
-        case .tapHere: return "LIVE — tap the minimap where you're standing"
-        case .tapToward: return "LIVE — tap the minimap toward what you're facing"
-        case .tracking:
-            let src = s.position?.source.rawValue ?? "…"
-            let conf = Int((s.position?.confidence ?? 0) * 100)
-            return "LIVE — \(src) • \(conf)%\(s.needsTap ? " • tap to correct" : "")"
-        }
     }
 
     private func reAlign(_ m: PanoramaModel) {
