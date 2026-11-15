@@ -10,7 +10,7 @@ Built at **HackPrinceton, Fall 2026.**
 
 ## Demo
 
-**Demo video:** `<YOUTUBE_LINK>`
+**Demo video:** https://www.youtube.com/watch?v=SSWU0qaxgIA
 
 | | |
 |---|---|
