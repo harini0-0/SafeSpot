@@ -390,7 +390,7 @@ struct HybridTourView: View {
         if !pendingRoute.isEmpty, pendingRoute.first == target {
             pendingRoute.removeFirst()
             if !pendingRoute.isEmpty {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { advancePending(m) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { advancePending(m) }
             }
         }
     }
@@ -471,11 +471,11 @@ struct HybridTourView: View {
                     "Tornado warning. Go to the \(m.typeName(t1)) — interior, away from windows.")
             speak("Tornado warning. Move to the \(m.typeName(t1)). It's interior, away from windows.")
 
-            // Stage 1 — start walking.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { travel(m, to: t1) }
+            // Stage 1 — start walking (after the warning finishes).
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) { travel(m, to: t1) }
 
-            // Stage 2 — hallway blocked → reroute.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 9) {
+            // Stage 2 — hallway blocked → reroute (after the first walk + a pause).
+            DispatchQueue.main.asyncAfter(deadline: .now() + 18) {
                 if let h = hallway { m.blockedRooms.insert(h) }
                 let t2 = m.nearestSafePano(from: m.index, avoiding: m.blockedRooms,
                                            types: ["Bedroom", "Closet", "Bathroom"]) ?? m.index
@@ -485,7 +485,7 @@ struct HybridTourView: View {
                 travel(m, to: t2)
 
                 // Stage 3 — arrival.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
                     plan = ("Tornado", [m.index],
                             "You're in the safe spot. Get low, cover your head, stay until the all-clear.")
                     speak("You've reached the safe spot. Get low and cover your head until the all clear.")
