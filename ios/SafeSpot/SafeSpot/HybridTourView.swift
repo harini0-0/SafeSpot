@@ -23,6 +23,9 @@ final class TourModel {
     var index = 0
     var yaw: Double = 0            // radians; model heading 0 = +Y, clockwise
     var transitioning = false
+    // Per-pano orientation (ported from Photo mode, which renders correctly).
+    var headingCalibDeg: Double = 0
+    var headingSign: Double = -1
 
     let camera = PerspectiveCamera()
     let sphere = ModelEntity()
@@ -49,7 +52,8 @@ final class TourModel {
     func placeAtRest() {
         sphere.position = scenePos(index)
         sphere.isEnabled = true
-        mesh?.isEnabled = false
+        mesh?.isEnabled = false        // the raw mesh looks like clay; pano only
+        alignCurrent()
         updateLook()
     }
 
@@ -57,6 +61,40 @@ final class TourModel {
         let o = scenePos(index)
         let fwd = SIMD3<Float>(Float(sin(yaw)), 0, Float(-cos(yaw)))
         camera.look(at: o + fwd, from: o, relativeTo: nil)
+    }
+
+    /// Yaw from a model heading, Photo-mode convention (yaw = 90 - heading).
+    func applyHeadingDeg(_ h: Double) { yaw = (90 - h) * .pi / 180; updateLook() }
+
+    func panoYawDeg(_ p: Panorama) -> Double {
+        guard let q = p.rotation else { return 0 }
+        return atan2(q.z, q.w) * 2 * 180 / .pi
+    }
+
+    /// Rotate the sphere so the photo lines up with model directions (Photo mode's
+    /// calibrated fix). Without this each pano is pasted at a random angle (the
+    /// "collaged surfaces" / wrong-facing arrow).
+    func alignCurrent() {
+        guard let p = current else { return }
+        let deg = headingSign * panoYawDeg(p) + headingCalibDeg
+        sphere.orientation = simd_quatf(angle: Float(deg * .pi / 180), axis: SIMD3<Float>(0, 1, 0))
+    }
+
+    /// Which scan point to show in live tracking: locked to the room `locate` reports,
+    /// with hysteresis so position noise near a boundary doesn't flip rooms.
+    func liveTargetIndex(x: Double, y: Double, roomId: String?) -> Int {
+        func d(_ i: Int) -> Double { hypot(panos[i].position.x - x, panos[i].position.y - y) }
+        let margin = 0.8   // metres a candidate must beat the current by to switch
+        let curRoom = panos[index].anchor?.room?.id
+        if let r = roomId, !r.isEmpty {
+            let pool = panos.indices.filter { panos[$0].anchor?.room?.id == r }
+            if let best = pool.min(by: { d($0) < d($1) }) {
+                if r == curRoom { return d(best) + margin < d(index) ? best : index }
+                return best    // locate says we changed rooms → go to that room's nearest
+            }
+        }
+        let best = panos.indices.min(by: { d($0) < d($1) }) ?? index
+        return d(best) + margin < d(index) ? best : index
     }
 
     func material(for pano: Panorama) async -> UnlitMaterial? {
@@ -252,9 +290,9 @@ struct HybridTourView: View {
         .onAppear { configureVoice() }
         .onReceive(tick) { _ in
             guard live, let m = model, let s = locate, let pos = s.position, !m.transitioning else { return }
-            m.yaw = pos.heading * .pi / 180
-            let ni = m.nearestPanoIndex(x: pos.x, y: pos.y)
-            if ni != m.index { travel(m, to: ni) } else { m.updateLook() }
+            m.applyHeadingDeg(pos.heading)   // continuous look (Photo-mode convention)
+            let ni = m.liveTargetIndex(x: pos.x, y: pos.y, roomId: pos.roomId)
+            if ni != m.index { liveJump(m, to: ni) }
             tickN &+= 1
         }
     }
@@ -290,34 +328,26 @@ struct HybridTourView: View {
         glide(m, to: next)
     }
 
+    /// Move to a scan point as a quick fade-cut between panoramas (the textured mesh
+    /// in between looked like clay, so we don't show it).
     private func glide(_ m: TourModel, to target: Int) {
         guard !m.transitioning, target != m.index, m.panos.indices.contains(target) else { return }
         m.transitioning = true
         historyStore.append(m.index)
-        let from = m.scenePos(m.index), to = m.scenePos(target)
-        m.sphere.isEnabled = false
-        m.mesh?.isEnabled = true
-        // Face the target and dolly there through the mesh.
-        m.camera.look(at: to, from: from, relativeTo: nil)
-        var t = m.camera.transform; t.translation = to
-        m.camera.move(to: t, relativeTo: nil, duration: 0.55, timingFunction: .easeInOut)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-            Task { await arrive(m, to: target) }
-        }
+        Task { await arrive(m, to: target) }
     }
 
     private func glideBack(_ m: TourModel) {
         guard !m.transitioning, let prev = historyStore.popLast() else { return }
-        // temporary: don't double-push history on back
         m.transitioning = true
-        let from = m.scenePos(m.index), to = m.scenePos(prev)
-        m.sphere.isEnabled = false; m.mesh?.isEnabled = true
-        m.camera.look(at: to, from: from, relativeTo: nil)
-        var t = m.camera.transform; t.translation = to
-        m.camera.move(to: t, relativeTo: nil, duration: 0.55, timingFunction: .easeInOut)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-            Task { await arrive(m, to: prev) }
-        }
+        Task { await arrive(m, to: prev) }
+    }
+
+    /// Live tracking: teleport straight to the room-locked scan point (no route glide).
+    private func liveJump(_ m: TourModel, to target: Int) {
+        guard !m.transitioning, target != m.index, m.panos.indices.contains(target) else { return }
+        m.transitioning = true
+        Task { await arrive(m, to: target) }
     }
 
     private func arrive(_ m: TourModel, to target: Int) async {
