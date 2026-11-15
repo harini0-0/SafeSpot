@@ -20,7 +20,8 @@ enum SkySphere {
             for j in 0...slices {
                 let lon = 2 * Float.pi * Float(j) / Float(slices)
                 positions.append(SIMD3<Float>(sinLat * cos(lon), cosLat, sinLat * sin(lon)) * radius)
-                uvs.append(SIMD2<Float>(Float(j) / Float(slices), Float(i) / Float(stacks)))
+                // v flipped: texture row 0 (ceiling) maps to the top of the sphere.
+                uvs.append(SIMD2<Float>(Float(j) / Float(slices), 1 - Float(i) / Float(stacks)))
             }
         }
         let cols = slices + 1
