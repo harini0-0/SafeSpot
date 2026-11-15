@@ -22,9 +22,11 @@ import threading
 import time
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 
 from earthquake import EarthquakeMonitor
@@ -42,6 +44,31 @@ SESSION = Session()
 WS = ConnectionManager()
 MONITOR = EarthquakeMonitor()
 LAST_VALID_PLAN: Optional[Plan] = None
+
+
+def _load_panoramas() -> list[dict]:
+    """Scan-point metadata (id, position, room) from the read-only data file."""
+    data = json.loads((Path(__file__).parent.parent / "data" / f"{GRAPH.model_id}.json").read_text())
+    out = []
+    for p in data.get("sections", {}).get("panoramas", {}).get("panoLocations", []):
+        room = (p.get("anchor") or {}).get("room") or {}
+        rid = room.get("id")
+        pos = p.get("position") or {}
+        out.append({
+            "id": p["id"],
+            "x": pos.get("x"), "y": pos.get("y"), "z": pos.get("z"),
+            "roomId": rid,
+            "roomType": GRAPH.rooms[rid].type if rid in GRAPH.rooms else None,
+            "label": p.get("label"),
+            "neighbors": (p.get("anchor") or {}).get("neighbors") or [],
+            "rotation": p.get("rotation"),
+        })
+    return out
+
+
+PANORAMAS = _load_panoramas()
+PANO_IDS = {p["id"] for p in PANORAMAS}
+PANO_DIR = Path(__file__).parent.parent / "ios" / "SafeSpot" / "SafeSpot" / "Resources" / "panoramas"
 
 
 def _plan_now() -> Plan:
@@ -108,6 +135,182 @@ def health():
         "rooms": len(GRAPH.rooms),
         "house": {"lat": lat, "lon": lon},
     }
+
+
+@app.get("/house")
+def house():
+    """Read-only house geometry for the (tinker) web client: room polygons."""
+    return {
+        "modelId": GRAPH.model_id,
+        "rooms": [
+            {
+                "roomId": rid,
+                "type": r.type,
+                "navigable": r.navigable,
+                "polygon": [{"x": p.x, "y": p.y} for p in r.polygon],
+            }
+            for rid, r in GRAPH.rooms.items()
+        ],
+    }
+
+
+_NO_CACHE = {"Cache-Control": "no-store"}
+
+
+@app.get("/app", response_class=HTMLResponse)
+def web_app():
+    """Serve the self-contained 2D LAN web client (tinker only)."""
+    page = Path(__file__).parent / "web" / "index.html"
+    return HTMLResponse(page.read_text(encoding="utf-8"), headers=_NO_CACHE)
+
+
+@app.get("/app3d", response_class=HTMLResponse)
+def web_app_3d():
+    """Serve the 3D walkthrough client (tinker only)."""
+    page = Path(__file__).parent / "web" / "walk.html"
+    return HTMLResponse(page.read_text(encoding="utf-8"), headers=_NO_CACHE)
+
+
+@app.get("/tour", response_class=HTMLResponse)
+def web_tour():
+    """Serve the photoreal 360 panorama tour client (tinker only)."""
+    page = Path(__file__).parent / "web" / "tour.html"
+    return HTMLResponse(page.read_text(encoding="utf-8"), headers=_NO_CACHE)
+
+
+@app.get("/panoramas")
+def panoramas():
+    """Scan-point metadata for the tour (id, position, room)."""
+    return {"panoramas": PANORAMAS}
+
+
+def _pano_by_id() -> dict:
+    return {p["id"]: p for p in PANORAMAS}
+
+
+def _pano_route(start_id: str, target_id: str) -> list[str]:
+    """BFS over scan-point neighbours from start pano to target pano."""
+    by_id = _pano_by_id()
+    if start_id == target_id:
+        return [start_id]
+    prev: dict[str, str] = {}
+    seen = {start_id}
+    queue = [start_id]
+    while queue:
+        cur = queue.pop(0)
+        if cur == target_id:
+            break
+        for nb in by_id.get(cur, {}).get("neighbors", []):
+            if nb in by_id and nb not in seen:
+                seen.add(nb)
+                prev[nb] = cur
+                queue.append(nb)
+    if target_id not in seen:
+        return [start_id]
+    path = [target_id]
+    c = target_id
+    while c != start_id:
+        c = prev[c]
+        path.append(c)
+    return list(reversed(path))
+
+
+class WalkRequest(BaseModel):
+    hazard: Hazard
+    startPanoId: str
+
+
+@app.post("/walkthrough")
+def walkthrough(req: WalkRequest):
+    """Guided step-by-step route (as scan points) + spoken instructions."""
+    by_id = _pano_by_id()
+    start = by_id.get(req.startPanoId)
+    if not start:
+        raise HTTPException(status_code=404, detail="unknown startPanoId")
+    start_room = start["roomId"]
+
+    # Earthquake: take cover in place, no walking.
+    if req.hazard == Hazard.earthquake:
+        return {
+            "hazard": req.hazard.value,
+            "takeCover": True,
+            "reason": "Take cover now; move only after the shaking stops.",
+            "steps": [{
+                "panoId": start["id"], "roomType": start["roomType"],
+                "x": start["x"], "y": start["y"],
+                "instruction": f"Earthquake. You're in the {start['roomType']}. "
+                               "Take cover right here, away from windows. Do not run.",
+                "isDestination": True,
+            }],
+        }
+
+    plan = make_plan(GRAPH, current_room=start_room, hazard=req.hazard,
+                     room_states=STORE.snapshot(), shaking=False)
+    target_room = plan.target.roomId if (plan.target and plan.target.roomId) else start_room
+    if target_room == start_room:
+        route_ids = [start["id"]]
+    else:
+        target = next((p for p in PANORAMAS if p["roomId"] == target_room), start)
+        route_ids = _pano_route(start["id"], target["id"])
+
+    single = len(route_ids) == 1
+    steps = []
+    prev_room = None
+    for i, pid in enumerate(route_ids):
+        p = by_id[pid]
+        rt = p["roomType"] or "room"
+        last = i == len(route_ids) - 1
+        if single:
+            instr = (f"You're in the {rt}. The exit is right here - leave now."
+                     if req.hazard == Hazard.fire
+                     else f"You're already in the safe spot, the {rt}. Get down and cover up, away from windows.")
+        elif last:
+            instr = (f"You've reached the {rt}. Leave through the exit here."
+                     if req.hazard == Hazard.fire
+                     else f"You've reached the {rt}, the safe spot. Get down and cover up, away from windows.")
+        elif i == 0:
+            nxt = by_id[route_ids[1]]["roomType"] or "the next room"
+            instr = f"You're in the {rt}. Head toward the {nxt}."
+        elif rt != prev_room:
+            instr = f"Go into the {rt}, then keep going."
+        else:
+            instr = f"Continue through the {rt}."
+        steps.append({
+            "panoId": pid, "roomType": rt, "x": p["x"], "y": p["y"],
+            "instruction": instr, "isDestination": last,
+        })
+        prev_room = rt
+
+    return {
+        "hazard": req.hazard.value,
+        "takeCover": False,
+        "reason": plan.reasons[0] if plan.reasons else "",
+        "steps": steps,
+    }
+
+
+@app.get("/pano/{pano_id}")
+def pano_image(pano_id: str):
+    """Serve one local 360 panorama jpg (validated id; no traversal)."""
+    if pano_id not in PANO_IDS:
+        raise HTTPException(status_code=404)
+    f = PANO_DIR / f"{pano_id}.jpg"
+    if not f.is_file():
+        raise HTTPException(status_code=404)
+    return FileResponse(f, media_type="image/jpeg")
+
+
+@app.get("/web/{path:path}")
+def web_asset(path: str):
+    """Serve files under backend/web/ (e.g. the vendored three.min.js). Guards
+    against path traversal."""
+    base = (Path(__file__).parent / "web").resolve()
+    target = (base / path).resolve()
+    if base != target and base not in target.parents:
+        raise HTTPException(status_code=404)
+    if not target.is_file():
+        raise HTTPException(status_code=404)
+    return FileResponse(target)
 
 
 class PlanRequest(BaseModel):

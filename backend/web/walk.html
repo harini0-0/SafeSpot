@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Safe Spot — 3D Walk</title>
+<!-- Self-contained: the ONLY asset is the locally-vendored three.min.js served by
+     your own backend. No internet access at runtime; no camera/mic; no sensors. -->
+<style>
+  :root { --ink:#e8eef5; --muted:#9fb3c8; --accent:#4da3ff; --cover:#f1c40f; --block:#e74c3c; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+  html,body { margin:0; height:100%; background:#0b0f14; color:var(--ink);
+    font-family:-apple-system,system-ui,sans-serif; overflow:hidden; }
+  #view { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+  .bar { position:fixed; left:0; right:0; display:flex; gap:6px; padding:8px; z-index:5; }
+  .top { top:0; align-items:center; }
+  .top h1 { font-size:14px; margin:0 8px 0 2px; }
+  #status { font-size:11px; color:var(--muted); }
+  .hz { display:flex; gap:6px; flex:1; justify-content:flex-end; }
+  button { padding:10px 12px; font-size:14px; font-weight:600; color:var(--ink);
+    background:rgba(27,36,48,0.9); border:1px solid #2a3644; border-radius:10px; }
+  button.on { background:var(--accent); color:#06121f; border-color:var(--accent); }
+  button.cover { background:var(--cover); color:#2a1e00; border-color:var(--cover); }
+  .bottom { bottom:0; flex-direction:column; gap:8px; }
+  .moverow { display:flex; gap:8px; justify-content:center; }
+  .moverow button { width:64px; height:52px; font-size:20px; }
+  #instruction { background:rgba(27,36,48,0.92); border:1px solid #2a3644;
+    border-radius:10px; padding:10px 12px; font-size:14px; min-height:20px; }
+  #instruction .big { font-size:16px; font-weight:700; }
+  .hint { font-size:11px; color:var(--muted); text-align:center; }
+  #err { position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+    padding:24px; text-align:center; background:#0b0f14; z-index:20; font-size:15px; line-height:1.5; }
+  .eqbtn { display:none; }
+  .eqbtn.show { display:inline-block; }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<div class="bar top">
+  <h1>🏠 3D</h1>
+  <span id="status">loading…</span>
+  <div class="hz">
+    <button onclick="chooseHazard('tornado')" id="hz-tornado">🌪️</button>
+    <button onclick="chooseHazard('earthquake')" id="hz-earthquake">🌍</button>
+    <button onclick="chooseHazard('fire')" id="hz-fire">🔥</button>
+  </div>
+</div>
+
+<div class="bar bottom">
+  <div id="instruction">Tap a room to set where you are, then pick a hazard. Drag to look.</div>
+  <div class="moverow">
+    <button id="mBack" >▼</button>
+    <button id="mFwd" >▲</button>
+    <button onclick="askNext()">🔊</button>
+    <button id="modeBtn" onclick="toggleMode()">📍 Set</button>
+    <button id="shakeBtn" class="eqbtn cover" onclick="toggleShaking()">Shaking… tap when STOPPED</button>
+  </div>
+  <div class="hint">Tap room = set/block (toggle) · drag = look · ▲▼ = move</div>
+</div>
+
+<div id="err"></div>
+
+<script src="/web/vendor/three.min.js"></script>
+<script>
+"use strict";
+const API = location.origin;
+const WSBASE = (location.protocol === "https:" ? "wss://" : "ws://") + location.host;
+
+function fail(msg) {
+  const e = document.getElementById("err");
+  e.style.display = "flex"; e.textContent = msg;
+}
+if (!window.THREE) {
+  fail("3D engine (three.min.js) didn't load. Check backend/web/vendor/three.min.js exists, then reload.");
+  throw new Error("THREE missing");
+}
+
+// ---------- state ----------
+let rooms = [], roomMeshes = {}, floorMeshes = [], bounds = null;
+let currentRoom = null, hazard = null, plan = null, mode = "set";
+let planWS = null, sensorWS = null, sensorTimer = null, shaking = false;
+let lastSpoken = "";
+const blocked = new Set();
+const WALL_H = 2.4;
+
+// ---------- three.js setup ----------
+const canvas = document.getElementById("view");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0f14);
+const camera = new THREE.PerspectiveCamera(72, 1, 0.05, 500);
+const routeGroup = new THREE.Group(); scene.add(routeGroup);
+
+let yaw = 0, pitch = -0.15;            // look angles (radians)
+const eye = new THREE.Vector3(0, 1.5, 0);
+
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+window.addEventListener("resize", resize);
+
+// model (x,y) -> world (x, 0..h, -y)
+function W(x, y, h = 0) { return new THREE.Vector3(x, h, -y); }
+
+function roomColor(rm) {
+  const id = rm.roomId;
+  if (id === currentRoom) return 0x2f6fd0;                                   // blue: you
+  if (plan && plan.target && plan.target.roomId === id && !plan.takeCover) return 0x27ae60; // green: target
+  if (blocked.has(id)) return 0xc0392b;                                      // red: blocked
+  return rm._color;                                                         // distinct per-room base
+}
+
+function makeLabel(text) {
+  const c = document.createElement("canvas"); c.width = 256; c.height = 64;
+  const g = c.getContext("2d");
+  g.font = "bold 30px system-ui"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.lineWidth = 6; g.strokeStyle = "rgba(0,0,0,0.85)"; g.strokeText(text, 128, 32);
+  g.fillStyle = "#ffffff"; g.fillText(text, 128, 32);
+  const tex = new THREE.CanvasTexture(c);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+  s.scale.set(2.0, 0.5, 1); return s;
+}
+
+function buildHouse() {
+  rooms.forEach((rm, idx) => {
+    // distinct base color per room (greyed if non-navigable, e.g. Void)
+    rm._color = rm.navigable === false ? 0x2a3340
+      : new THREE.Color().setHSL((idx * 0.618) % 1, 0.55, 0.5).getHex();
+    const poly = rm.polygon;
+
+    // floor (opaque, distinct color so rooms read clearly from above)
+    const shape = new THREE.Shape();
+    poly.forEach((p, i) => i ? shape.lineTo(p.x, p.y) : shape.moveTo(p.x, p.y));
+    const floor = new THREE.Mesh(new THREE.ShapeGeometry(shape),
+      new THREE.MeshBasicMaterial({ color: rm._color, side: THREE.DoubleSide }));
+    floor.rotation.x = -Math.PI / 2;      // XY shape -> XZ floor (world z = -y)
+    floor.userData.roomId = rm.roomId;
+    scene.add(floor);
+    roomMeshes[rm.roomId] = floor; floorMeshes.push(floor);
+
+    // crisp dark room boundary on the floor (clear separation between rooms)
+    const outline = poly.map(p => W(p.x, p.y, 0.03));
+    outline.push(W(poly[0].x, poly[0].y, 0.03));
+    scene.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(outline),
+      new THREE.LineBasicMaterial({ color: 0x0b0f14 })));
+
+    // low, subtle walls (short so the dollhouse stays readable from above)
+    const wmat = new THREE.MeshBasicMaterial({ color: 0x1b2430, transparent: true,
+      opacity: 0.35, side: THREE.DoubleSide });
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], b = poly[(i + 1) % poly.length], v = [];
+      const A = W(a.x, a.y, 0), B = W(b.x, b.y, 0), At = W(a.x, a.y, WALL_H), Bt = W(b.x, b.y, WALL_H);
+      [A, B, Bt, A, Bt, At].forEach(p => v.push(p.x, p.y, p.z));
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3));
+      scene.add(new THREE.Mesh(g, wmat));
+    }
+
+    // room label floating above the floor
+    let cx = 0, cy = 0; poly.forEach(p => { cx += p.x; cy += p.y; });
+    cx /= poly.length; cy /= poly.length;
+    const label = makeLabel(rm.type);
+    label.position.copy(W(cx, cy, 1.3));
+    scene.add(label);
+  });
+  updateColors();
+}
+
+function updateColors() {
+  for (const rm of rooms) {
+    const m = roomMeshes[rm.roomId];
+    if (m) m.material.color.setHex(roomColor(rm));
+  }
+}
+
+function drawRoute() {
+  while (routeGroup.children.length) routeGroup.remove(routeGroup.children[0]);
+  if (!plan || plan.takeCover || !plan.waypoints || !plan.waypoints.length) return;
+  const pts = plan.waypoints.map(w => W(w.x, w.y, 0.06));
+  const lgeo = new THREE.BufferGeometry().setFromPoints(pts);
+  routeGroup.add(new THREE.Line(lgeo, new THREE.LineBasicMaterial({ color: 0xf1c40f })));
+  const sph = new THREE.SphereGeometry(0.18, 12, 12);
+  pts.forEach((p, i) => {
+    const mat = new THREE.MeshBasicMaterial({ color: i === pts.length - 1 ? 0x2ecc71 : 0xf1c40f });
+    const s = new THREE.Mesh(sph, mat); s.position.copy(p);
+    if (i === pts.length - 1) s.scale.set(1.6, 1.6, 1.6);
+    routeGroup.add(s);
+  });
+}
+
+// ---------- camera ----------
+function applyCamera() {
+  const e = new THREE.Euler(pitch, yaw, 0, "YXZ");
+  camera.quaternion.setFromEuler(e);
+  camera.position.copy(eye);
+}
+function forwardVec() {
+  const f = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+  f.y = 0; f.normalize(); return f;
+}
+let moving = 0;
+function step() { eye.addScaledVector(forwardVec(), moving * 0.09); }
+
+function animate() {
+  if (moving) step();
+  applyCamera();
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+// ---------- input: drag to look, tap to pick a room ----------
+let down = null;
+canvas.addEventListener("pointerdown", e => { down = { x: e.clientX, y: e.clientY, moved: 0 }; });
+canvas.addEventListener("pointermove", e => {
+  if (!down) return;
+  const dx = e.movementX || 0, dy = e.movementY || 0;
+  down.moved += Math.abs(dx) + Math.abs(dy);
+  yaw -= dx * 0.005;
+  pitch = Math.max(-1.4, Math.min(1.4, pitch - dy * 0.005));
+});
+canvas.addEventListener("pointerup", e => {
+  if (down && down.moved < 8) pickRoom(e.clientX, e.clientY);
+  down = null;
+});
+
+const ray = new THREE.Raycaster();
+function pickRoom(px, py) {
+  const r = canvas.getBoundingClientRect();
+  const ndc = new THREE.Vector2(((px - r.left) / r.width) * 2 - 1, -((py - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObjects(floorMeshes)[0];
+  if (!hit) return;
+  const id = hit.object.userData.roomId;
+  if (mode === "block") { reportBlocked(id); return; }
+  currentRoom = id; updateColors();
+  if (hazard) requestPlan();
+  else { const rm = rooms.find(r => r.roomId === id); say("You are in the " + (rm ? rm.type : "room") + ". Pick a hazard."); }
+}
+
+function toggleMode() {
+  mode = mode === "set" ? "block" : "set";
+  document.getElementById("modeBtn").textContent = mode === "set" ? "📍 Set" : "🚧 Block";
+}
+
+function holdBtn(id, dir) {
+  const b = document.getElementById(id);
+  const on = e => { e.preventDefault(); moving = dir; };
+  const off = () => { moving = 0; };
+  b.addEventListener("pointerdown", on); b.addEventListener("pointerup", off);
+  b.addEventListener("pointerleave", off); b.addEventListener("pointercancel", off);
+}
+holdBtn("mFwd", 1); holdBtn("mBack", -1);
+
+// ---------- backend ----------
+async function loadHouse() {
+  try {
+    const data = await (await fetch(API + "/house")).json();
+    rooms = data.rooms.filter(r => r.polygon && r.polygon.length >= 3);
+    let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+    rooms.forEach(r => r.polygon.forEach(p => {
+      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+    }));
+    bounds = { minX, minY, maxX, maxY };
+    buildHouse();
+    // start with a dollhouse view (above + angled down) so rooms read clearly
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    const span = Math.max(maxX - minX, maxY - minY);
+    eye.set(cx, span * 1.1, -cy + span * 0.55);
+    yaw = 0; pitch = -0.95;
+    document.getElementById("status").textContent = "ready";
+    resize(); connectPlanWS(); animate();
+  } catch (e) {
+    fail("Can't reach the backend. Is it running and are you on the same Wi-Fi?\n" + e);
+  }
+}
+
+async function chooseHazard(h) {
+  hazard = h;
+  for (const id of ["tornado", "earthquake", "fire"])
+    document.getElementById("hz-" + id).classList.toggle("on", id === h);
+  document.getElementById("shakeBtn").classList.toggle("show", h === "earthquake");
+  if (!currentRoom) { say("First tap the room you're in."); return; }
+  if (h === "earthquake") startEarthquake(); else stopEarthquake();
+  await requestPlan();
+}
+
+async function requestPlan() {
+  if (!currentRoom || !hazard) return;
+  try {
+    const r = await fetch(API + "/plan", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ position: { roomId: currentRoom, x: 0, y: 0 }, hazard }) });
+    setPlan(await r.json());
+  } catch (e) {}
+}
+
+async function askNext() {
+  try {
+    const d = await (await fetch(API + "/voice", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: "Where do I go next?" }) })).json();
+    showInstruction(d.answer, true); say(d.answer);
+  } catch (e) {}
+}
+
+function setPlan(p) {
+  if (!p || !p.planId) return;
+  plan = p; updateColors(); drawRoute();
+  const line = p.takeCover ? "🟡 TAKE COVER — do not run." : (p.reasons && p.reasons[0]) || "Route updated.";
+  showInstruction(line, true);
+  say(p.takeCover ? "Take cover where you are. Do not run." : (p.reasons && p.reasons[0]) || "Route updated.");
+}
+
+function connectPlanWS() {
+  try {
+    planWS = new WebSocket(WSBASE + "/ws/plan");
+    planWS.onmessage = ev => { try { setPlan(JSON.parse(ev.data)); } catch (e) {} };
+    planWS.onclose = () => setTimeout(connectPlanWS, 1500);
+  } catch (e) {}
+}
+
+async function reportBlocked(roomId) {
+  blocked.add(roomId); updateColors();
+  try {
+    await fetch(API + "/report", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId, state: "blocked", source: "tap" }) });
+  } catch (e) {}
+}
+
+// ---------- earthquake (simulated, no sensors) ----------
+function startEarthquake() {
+  shaking = true; updateShakeBtn();
+  if (!sensorWS || sensorWS.readyState > 1) sensorWS = new WebSocket(WSBASE + "/ws/sensors");
+  if (sensorTimer) clearInterval(sensorTimer);
+  sensorTimer = setInterval(() => {
+    if (!sensorWS || sensorWS.readyState !== 1) return;
+    sensorWS.send(JSON.stringify({ rms: shaking ? 0.5 : 0.02, activity: "stationary", ts: new Date().toISOString() }));
+  }, 1000);
+}
+function stopEarthquake() {
+  if (sensorTimer) { clearInterval(sensorTimer); sensorTimer = null; }
+  if (sensorWS) { try { sensorWS.close(); } catch (e) {} sensorWS = null; }
+  shaking = false;
+}
+function toggleShaking() { shaking = !shaking; updateShakeBtn(); }
+function updateShakeBtn() {
+  document.getElementById("shakeBtn").textContent = shaking ? "Shaking… tap when STOPPED" : "Stopped — guiding out…";
+}
+
+// ---------- voice (output only) ----------
+function say(t) {
+  lastSpoken = t;
+  if (!("speechSynthesis" in window)) return;
+  try { const u = new SpeechSynthesisUtterance(t); speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}
+}
+function showInstruction(t, big) {
+  document.getElementById("instruction").innerHTML = big
+    ? '<span class="big">' + esc(t) + "</span>" : esc(t);
+}
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
+
+loadHouse();
+</script>
+</body>
+</html>

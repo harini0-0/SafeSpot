@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Safe Spot — Guided Tour</title>
+<!-- Photoreal 360 guided walkthrough from LOCAL scan photos. Only non-image asset
+     is the locally-vendored three.min.js. No internet at runtime; no camera/mic. -->
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+  html,body { margin:0; height:100%; background:#000; color:#e8eef5;
+    font-family:-apple-system,system-ui,sans-serif; overflow:hidden; }
+  #view { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+  .top { position:fixed; top:0; left:0; right:0; display:flex; gap:6px; align-items:center;
+    padding:8px; z-index:6; background:linear-gradient(#000b,#0000); }
+  .top b { font-size:14px; } #status { font-size:11px; color:#9fb3c8; }
+  .hz { display:flex; gap:6px; flex:1; justify-content:flex-end; }
+  button { padding:9px 11px; font-size:14px; font-weight:600; color:#e8eef5;
+    background:rgba(27,36,48,0.9); border:1px solid #2a3644; border-radius:10px; }
+  button.on { background:#4da3ff; color:#06121f; border-color:#4da3ff; }
+  .tiny { padding:6px 8px; font-size:12px; }
+  /* green direction arrow overlay */
+  #arrow { position:fixed; left:50%; top:42%; width:120px; height:120px; margin:-60px 0 0 -60px;
+    z-index:5; pointer-events:none; display:none; transition:transform 0.25s ease-out;
+    filter:drop-shadow(0 3px 6px rgba(0,0,0,0.6)); }
+  #mini { position:fixed; left:10px; bottom:96px; width:210px; height:165px; z-index:6;
+    background:rgba(11,15,20,0.88); border:1px solid #2a3644; border-radius:10px; touch-action:none; }
+  .bottom { position:fixed; left:0; right:0; bottom:0; padding:8px; z-index:6;
+    display:flex; flex-direction:column; gap:8px; background:linear-gradient(#0000,#000b); }
+  #instruction { background:rgba(27,36,48,0.95); border:1px solid #2a3644; border-radius:10px;
+    padding:11px 13px; font-size:15px; font-weight:700; line-height:1.35; min-height:22px; }
+  .row { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+  .hint { font-size:10.5px; color:#9fb3c8; text-align:center; }
+  #err { position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+    padding:24px; text-align:center; background:#0b0f14; z-index:20; font-size:15px; line-height:1.5; }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<svg id="arrow" viewBox="0 0 100 100">
+  <polygon points="50,6 86,70 50,54 14,70" fill="#27e06a" stroke="#0b3d20" stroke-width="3"/>
+</svg>
+
+<div class="top">
+  <b id="roomlabel">…</b> <span id="status">loading…</span>
+  <div class="hz">
+    <button onclick="startDemo('tornado')" id="hz-tornado">🌪️ Tornado</button>
+    <button onclick="startDemo('earthquake')" id="hz-earthquake">🌍 Quake</button>
+    <button onclick="startDemo('fire')" id="hz-fire">🔥 Fire</button>
+  </div>
+</div>
+
+<canvas id="mini" width="210" height="165"></canvas>
+
+<div class="bottom">
+  <div id="instruction">Pick a hazard to start the guided walkthrough. Drag to look around.</div>
+  <div class="row">
+    <button onclick="replay()">▶ Replay</button>
+    <button onclick="stopDemo()">■ Stop</button>
+    <button class="tiny" onclick="calib(-15)">⟲ aim</button>
+    <button class="tiny" onclick="calib(15)">aim ⟳</button>
+    <button class="tiny" onclick="flipAim()">⇄ flip</button>
+  </div>
+  <div class="hint">Guided demo walks you to safety. If the green arrow doesn't point at the
+    door, tap ⟲ / ⟳ / ⇄ once to aim it. The minimap route is always correct.</div>
+</div>
+<div id="err"></div>
+
+<script src="/web/vendor/three.min.js"></script>
+<script>
+"use strict";
+const API = location.origin;
+function fail(m){ const e=document.getElementById("err"); e.style.display="flex"; e.textContent=m; }
+if (!window.THREE) { fail("3D engine didn't load (backend/web/vendor/three.min.js). Reload once it's in place."); throw new Error("no THREE"); }
+
+// ---- state ----
+let panos=[], byId={}, roomsPoly=[], bounds=null;
+let current=null, steps=[], stepIdx=0, guiding=false, hazard=null, stepTimer=null;
+let alignSign=1, alignCalibDeg=0;           // one-time heading calibration (⟲ ⟳ ⇄)
+let yaw=0, pitch=0, turnTo=null;            // turnTo = yaw we're animating toward
+
+// ---- three.js sphere ----
+const canvas=document.getElementById("view");
+const renderer=new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+if ("outputEncoding" in renderer) renderer.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(75,1,0.1,1100);
+const geo=new THREE.SphereGeometry(500,60,40); geo.scale(-1,1,1);
+const mat=new THREE.MeshBasicMaterial({color:0x888888});
+const sphere=new THREE.Mesh(geo,mat); scene.add(sphere);
+const texLoader=new THREE.TextureLoader();
+const DEG=180/Math.PI, RAD=Math.PI/180;
+
+function resize(){ const w=canvas.clientWidth,h=canvas.clientHeight;
+  renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+window.addEventListener("resize",resize);
+
+// ---- heading math (aligned via each pano's rotation + one-time calibration) ----
+function panoYawDeg(p){ const q=p&&p.rotation; return q? Math.atan2(q.z,q.w)*2*DEG : 0; }
+function alignSphere(p){ sphere.rotation.y=(alignSign*panoYawDeg(p)+alignCalibDeg)*RAD; }
+function azTo(p){ if(!current) return 0; return Math.atan2(p.y-current.y,p.x-current.x)*DEG; } // model azimuth to point
+function requiredYawRad(azDeg){ return (90-azDeg)*RAD; }                                       // yaw to face that azimuth
+
+// ---- render loop ----
+function animate(){
+  if(turnTo!==null){ let d=turnTo-yaw; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
+    if(Math.abs(d)<0.01){ yaw=turnTo; turnTo=null; } else yaw+=d*0.15; }
+  camera.quaternion.setFromEuler(new THREE.Euler(pitch,yaw,0,"YXZ"));
+  updateArrow();
+  renderer.render(scene,camera);
+  requestAnimationFrame(animate);
+}
+function updateArrow(){
+  const a=document.getElementById("arrow");
+  if(!guiding || stepIdx>=steps.length-1){ a.style.display="none"; return; }
+  const nxt=steps[stepIdx+1]; if(!nxt){ a.style.display="none"; return; }
+  const screenDeg=(yaw*DEG) - requiredYawRad(azTo(nxt))*DEG;   // 0 = pointing straight ahead
+  a.style.display="block"; a.style.transform="rotate("+screenDeg+"deg)";
+}
+
+// ---- look (drag) ----
+let down=null;
+canvas.addEventListener("pointerdown",e=>down={x:e.clientX,y:e.clientY});
+canvas.addEventListener("pointermove",e=>{ if(!down)return;
+  turnTo=null; yaw-=(e.movementX||0)*0.005;
+  pitch=Math.max(-1.0,Math.min(1.0,pitch-(e.movementY||0)*0.005)); });
+canvas.addEventListener("pointerup",()=>down=null);
+
+// ---- data ----
+async function loadAll(){
+  try{
+    const [pj,hj]=await Promise.all([fetch(API+"/panoramas").then(r=>r.json()),fetch(API+"/house").then(r=>r.json())]);
+    panos=pj.panoramas.filter(p=>p.x!=null); panos.forEach(p=>byId[p.id]=p);
+    roomsPoly=hj.rooms.filter(r=>r.polygon&&r.polygon.length>=3);
+    let a=1e9,b=1e9,c=-1e9,d=-1e9;
+    roomsPoly.forEach(r=>r.polygon.forEach(p=>{a=Math.min(a,p.x);c=Math.max(c,p.x);b=Math.min(b,p.y);d=Math.max(d,p.y);}));
+    bounds={minX:a,minY:b,maxX:c,maxY:d};
+    resize(); animate();
+    const start=panos.find(p=>(p.roomType||"").includes("Living"))||panos[0];
+    jumpTo(start.id);
+  }catch(e){ fail("Can't reach the backend. Is it running and are you on the same Wi-Fi?\n"+e); }
+}
+function jumpTo(id){
+  const p=byId[id]; if(!p) return; current=p;
+  document.getElementById("status").textContent="loading photo…";
+  texLoader.load(API+"/pano/"+id, tex=>{
+    if("encoding" in tex) tex.encoding=THREE.sRGBEncoding;
+    mat.map=tex; mat.color.setHex(0xffffff); mat.needsUpdate=true;
+    document.getElementById("status").textContent="";
+  }, undefined, ()=>document.getElementById("status").textContent="photo failed");
+  alignSphere(p);
+  document.getElementById("roomlabel").textContent=p.roomType||"Room";
+  drawMini();
+}
+
+// ---- guided walkthrough ----
+async function startDemo(h){
+  if(!current) return;
+  hazard=h;
+  for(const id of ["tornado","earthquake","fire"]) document.getElementById("hz-"+id).classList.toggle("on",id===h);
+  try{
+    const w=await (await fetch(API+"/walkthrough",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({hazard:h,startPanoId:current.id})})).json();
+    steps=w.steps||[]; stepIdx=0; guiding=true; playStep();
+  }catch(e){ showInstruction("Couldn't build the walkthrough."); }
+}
+function replay(){ if(hazard) startDemo(hazard); }
+function stopDemo(){ guiding=false; if(stepTimer)clearTimeout(stepTimer); document.getElementById("arrow").style.display="none"; }
+
+function playStep(){
+  if(!guiding || stepIdx>=steps.length) return;
+  const s=steps[stepIdx];
+  jumpTo(s.panoId);
+  showInstruction((stepIdx+1)+"/"+steps.length+"  "+s.instruction); say(s.instruction);
+  drawMini();
+  if(stepTimer) clearTimeout(stepTimer);
+  if(s.isDestination){ guiding=true; /* keep arrow hidden */ updateArrow(); return; }
+  // turn to face the next scan point, then advance
+  const nxt=steps[stepIdx+1];
+  if(nxt) turnTo=requiredYawRad(azTo(nxt));
+  stepTimer=setTimeout(()=>{ stepIdx++; playStep(); }, 3600);
+}
+
+// ---- minimap: floor plan + route line ----
+const mini=document.getElementById("mini"), mctx=mini.getContext("2d");
+function toMini(pt){ const m=12,w=mini.width,h=mini.height;
+  const s=Math.min((w-2*m)/((bounds.maxX-bounds.minX)||1),(h-2*m)/((bounds.maxY-bounds.minY)||1));
+  return {x:m+(pt.x-bounds.minX)*s, y:m+(bounds.maxY-pt.y)*s}; }
+function drawMini(){
+  if(!bounds) return;
+  mctx.clearRect(0,0,mini.width,mini.height);
+  // floor plan
+  for(const r of roomsPoly){ mctx.beginPath();
+    r.polygon.forEach((p,i)=>{const c=toMini(p); i?mctx.lineTo(c.x,c.y):mctx.moveTo(c.x,c.y);});
+    mctx.closePath(); mctx.fillStyle="rgba(255,255,255,0.06)"; mctx.fill();
+    mctx.strokeStyle="#44617e"; mctx.lineWidth=1; mctx.stroke(); }
+  // route line through the walkthrough steps
+  if(steps.length>1){ mctx.beginPath();
+    steps.forEach((s,i)=>{const c=toMini(s); i?mctx.lineTo(c.x,c.y):mctx.moveTo(c.x,c.y);});
+    mctx.strokeStyle="#f1c40f"; mctx.lineWidth=3; mctx.stroke();
+    const t=toMini(steps[steps.length-1]);                       // destination ring
+    mctx.beginPath(); mctx.arc(t.x,t.y,6,0,7); mctx.fillStyle="#27ae60"; mctx.fill(); }
+  // all scan points (faint) + current (blue)
+  for(const p of panos){ const c=toMini(p);
+    mctx.beginPath(); mctx.arc(c.x,c.y,(current&&p.id===current.id)?5:2.5,0,7);
+    mctx.fillStyle=(current&&p.id===current.id)?"#4da3ff":"rgba(207,224,240,0.6)"; mctx.fill(); }
+}
+mini.addEventListener("click",e=>{ // manual jump (when not guiding)
+  if(guiding) return;
+  const r=mini.getBoundingClientRect();
+  const mx=(e.clientX-r.left)*(mini.width/r.width), my=(e.clientY-r.top)*(mini.height/r.height);
+  let best=null,bd=1e9; for(const p of panos){const c=toMini(p);const d=(c.x-mx)**2+(c.y-my)**2; if(d<bd){bd=d;best=p;}}
+  if(best&&bd<900) jumpTo(best.id);
+});
+
+// ---- heading calibration (one-time) ----
+function calib(d){ alignCalibDeg+=d; if(current) alignSphere(current); }
+function flipAim(){ alignSign*=-1; alignCalibDeg=0; if(current) alignSphere(current); }
+
+// ---- voice (output only) ----
+function say(t){ if(!("speechSynthesis" in window))return;
+  try{const u=new SpeechSynthesisUtterance(t); speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
+function showInstruction(t){ document.getElementById("instruction").textContent=t; }
+
+loadAll();
+</script>
+</body>
+</html>
