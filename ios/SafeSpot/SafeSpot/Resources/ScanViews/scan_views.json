@@ -1,0 +1,2063 @@
+{
+ "modelId": "zyzG7fqtBDv",
+ "hfov": 55.0,
+ "step": 30.0,
+ "offset": 0.0,
+ "width": 300,
+ "height": 400,
+ "views": [
+  {
+   "file": "s2aku4p0w9zrxa8ts25c1h80d_000.jpg",
+   "panoId": "s2aku4p0w9zrxa8ts25c1h80d",
+   "panoLabel": "10",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.393696784973145,
+   "y": -1.858196496963501,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "s2aku4p0w9zrxa8ts25c1h80d_030.jpg",
+   "panoId": "s2aku4p0w9zrxa8ts25c1h80d",
+   "panoLabel": "10",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.393696784973145,
+   "y": -1.858196496963501,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "s2aku4p0w9zrxa8ts25c1h80d_060.jpg",
+   "panoId": "s2aku4p0w9zrxa8ts25c1h80d",
+   "panoLabel": "10",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.393696784973145,
+   "y": -1.858196496963501,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "s2aku4p0w9zrxa8ts25c1h80d_090.jpg",
+   "panoId": "s2aku4p0w9zrxa8ts25c1h80d",
+   "panoLabel": "10",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.393696784973145,
+   "y": -1.858196496963501,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "s2aku4p0w9zrxa8ts25c1h80d_120.jpg",
+   "panoId": "s2aku4p0w9zrxa8ts25c1h80d",
+   "panoLabel": "10",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.393696784973145,
+   "y": -1.858196496963501,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "s2aku4p0w9zrxa8ts25c1h80d_150.jpg",
+   "panoId": "s2aku4p0w9zrxa8ts25c1h80d",
+   "panoLabel": "10",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.393696784973145,
+   "y": -1.858196496963501,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "s2aku4p0w9zrxa8ts25c1h80d_180.jpg",
+   "panoId": "s2aku4p0w9zrxa8ts25c1h80d",
+   "panoLabel": "10",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.393696784973145,
+   "y": -1.858196496963501,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "s2aku4p0w9zrxa8ts25c1h80d_210.jpg",
+   "panoId": "s2aku4p0w9zrxa8ts25c1h80d",
+   "panoLabel": "10",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.393696784973145,
+   "y": -1.858196496963501,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "s2aku4p0w9zrxa8ts25c1h80d_240.jpg",
+   "panoId": "s2aku4p0w9zrxa8ts25c1h80d",
+   "panoLabel": "10",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.393696784973145,
+   "y": -1.858196496963501,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "s2aku4p0w9zrxa8ts25c1h80d_270.jpg",
+   "panoId": "s2aku4p0w9zrxa8ts25c1h80d",
+   "panoLabel": "10",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.393696784973145,
+   "y": -1.858196496963501,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "s2aku4p0w9zrxa8ts25c1h80d_300.jpg",
+   "panoId": "s2aku4p0w9zrxa8ts25c1h80d",
+   "panoLabel": "10",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.393696784973145,
+   "y": -1.858196496963501,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "s2aku4p0w9zrxa8ts25c1h80d_330.jpg",
+   "panoId": "s2aku4p0w9zrxa8ts25c1h80d",
+   "panoLabel": "10",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.393696784973145,
+   "y": -1.858196496963501,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "wasy210urp94nunpefi1whsid_000.jpg",
+   "panoId": "wasy210urp94nunpefi1whsid",
+   "panoLabel": "1",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -0.9548448920249939,
+   "y": -0.6635782718658447,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "wasy210urp94nunpefi1whsid_030.jpg",
+   "panoId": "wasy210urp94nunpefi1whsid",
+   "panoLabel": "1",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -0.9548448920249939,
+   "y": -0.6635782718658447,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "wasy210urp94nunpefi1whsid_060.jpg",
+   "panoId": "wasy210urp94nunpefi1whsid",
+   "panoLabel": "1",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -0.9548448920249939,
+   "y": -0.6635782718658447,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "wasy210urp94nunpefi1whsid_090.jpg",
+   "panoId": "wasy210urp94nunpefi1whsid",
+   "panoLabel": "1",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -0.9548448920249939,
+   "y": -0.6635782718658447,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "wasy210urp94nunpefi1whsid_120.jpg",
+   "panoId": "wasy210urp94nunpefi1whsid",
+   "panoLabel": "1",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -0.9548448920249939,
+   "y": -0.6635782718658447,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "wasy210urp94nunpefi1whsid_150.jpg",
+   "panoId": "wasy210urp94nunpefi1whsid",
+   "panoLabel": "1",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -0.9548448920249939,
+   "y": -0.6635782718658447,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "wasy210urp94nunpefi1whsid_180.jpg",
+   "panoId": "wasy210urp94nunpefi1whsid",
+   "panoLabel": "1",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -0.9548448920249939,
+   "y": -0.6635782718658447,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "wasy210urp94nunpefi1whsid_210.jpg",
+   "panoId": "wasy210urp94nunpefi1whsid",
+   "panoLabel": "1",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -0.9548448920249939,
+   "y": -0.6635782718658447,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "wasy210urp94nunpefi1whsid_240.jpg",
+   "panoId": "wasy210urp94nunpefi1whsid",
+   "panoLabel": "1",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -0.9548448920249939,
+   "y": -0.6635782718658447,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "wasy210urp94nunpefi1whsid_270.jpg",
+   "panoId": "wasy210urp94nunpefi1whsid",
+   "panoLabel": "1",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -0.9548448920249939,
+   "y": -0.6635782718658447,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "wasy210urp94nunpefi1whsid_300.jpg",
+   "panoId": "wasy210urp94nunpefi1whsid",
+   "panoLabel": "1",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -0.9548448920249939,
+   "y": -0.6635782718658447,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "wasy210urp94nunpefi1whsid_330.jpg",
+   "panoId": "wasy210urp94nunpefi1whsid",
+   "panoLabel": "1",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -0.9548448920249939,
+   "y": -0.6635782718658447,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "qkgte113ywpz68y5rb8i7w5ud_000.jpg",
+   "panoId": "qkgte113ywpz68y5rb8i7w5ud",
+   "panoLabel": "2",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.76902174949646,
+   "y": 1.2869466543197632,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "qkgte113ywpz68y5rb8i7w5ud_030.jpg",
+   "panoId": "qkgte113ywpz68y5rb8i7w5ud",
+   "panoLabel": "2",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.76902174949646,
+   "y": 1.2869466543197632,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "qkgte113ywpz68y5rb8i7w5ud_060.jpg",
+   "panoId": "qkgte113ywpz68y5rb8i7w5ud",
+   "panoLabel": "2",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.76902174949646,
+   "y": 1.2869466543197632,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "qkgte113ywpz68y5rb8i7w5ud_090.jpg",
+   "panoId": "qkgte113ywpz68y5rb8i7w5ud",
+   "panoLabel": "2",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.76902174949646,
+   "y": 1.2869466543197632,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "qkgte113ywpz68y5rb8i7w5ud_120.jpg",
+   "panoId": "qkgte113ywpz68y5rb8i7w5ud",
+   "panoLabel": "2",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.76902174949646,
+   "y": 1.2869466543197632,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "qkgte113ywpz68y5rb8i7w5ud_150.jpg",
+   "panoId": "qkgte113ywpz68y5rb8i7w5ud",
+   "panoLabel": "2",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.76902174949646,
+   "y": 1.2869466543197632,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "qkgte113ywpz68y5rb8i7w5ud_180.jpg",
+   "panoId": "qkgte113ywpz68y5rb8i7w5ud",
+   "panoLabel": "2",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.76902174949646,
+   "y": 1.2869466543197632,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "qkgte113ywpz68y5rb8i7w5ud_210.jpg",
+   "panoId": "qkgte113ywpz68y5rb8i7w5ud",
+   "panoLabel": "2",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.76902174949646,
+   "y": 1.2869466543197632,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "qkgte113ywpz68y5rb8i7w5ud_240.jpg",
+   "panoId": "qkgte113ywpz68y5rb8i7w5ud",
+   "panoLabel": "2",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.76902174949646,
+   "y": 1.2869466543197632,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "qkgte113ywpz68y5rb8i7w5ud_270.jpg",
+   "panoId": "qkgte113ywpz68y5rb8i7w5ud",
+   "panoLabel": "2",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.76902174949646,
+   "y": 1.2869466543197632,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "qkgte113ywpz68y5rb8i7w5ud_300.jpg",
+   "panoId": "qkgte113ywpz68y5rb8i7w5ud",
+   "panoLabel": "2",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.76902174949646,
+   "y": 1.2869466543197632,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "qkgte113ywpz68y5rb8i7w5ud_330.jpg",
+   "panoId": "qkgte113ywpz68y5rb8i7w5ud",
+   "panoLabel": "2",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.76902174949646,
+   "y": 1.2869466543197632,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "qcnh773ye5c74yf168aih6rbd_000.jpg",
+   "panoId": "qcnh773ye5c74yf168aih6rbd",
+   "panoLabel": "7",
+   "roomId": "h26t7ky77ew74yb0pg8qqf5rd",
+   "x": -5.809380531311035,
+   "y": -0.6216162443161011,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "qcnh773ye5c74yf168aih6rbd_030.jpg",
+   "panoId": "qcnh773ye5c74yf168aih6rbd",
+   "panoLabel": "7",
+   "roomId": "h26t7ky77ew74yb0pg8qqf5rd",
+   "x": -5.809380531311035,
+   "y": -0.6216162443161011,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "qcnh773ye5c74yf168aih6rbd_060.jpg",
+   "panoId": "qcnh773ye5c74yf168aih6rbd",
+   "panoLabel": "7",
+   "roomId": "h26t7ky77ew74yb0pg8qqf5rd",
+   "x": -5.809380531311035,
+   "y": -0.6216162443161011,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "qcnh773ye5c74yf168aih6rbd_090.jpg",
+   "panoId": "qcnh773ye5c74yf168aih6rbd",
+   "panoLabel": "7",
+   "roomId": "h26t7ky77ew74yb0pg8qqf5rd",
+   "x": -5.809380531311035,
+   "y": -0.6216162443161011,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "qcnh773ye5c74yf168aih6rbd_120.jpg",
+   "panoId": "qcnh773ye5c74yf168aih6rbd",
+   "panoLabel": "7",
+   "roomId": "h26t7ky77ew74yb0pg8qqf5rd",
+   "x": -5.809380531311035,
+   "y": -0.6216162443161011,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "qcnh773ye5c74yf168aih6rbd_150.jpg",
+   "panoId": "qcnh773ye5c74yf168aih6rbd",
+   "panoLabel": "7",
+   "roomId": "h26t7ky77ew74yb0pg8qqf5rd",
+   "x": -5.809380531311035,
+   "y": -0.6216162443161011,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "qcnh773ye5c74yf168aih6rbd_180.jpg",
+   "panoId": "qcnh773ye5c74yf168aih6rbd",
+   "panoLabel": "7",
+   "roomId": "h26t7ky77ew74yb0pg8qqf5rd",
+   "x": -5.809380531311035,
+   "y": -0.6216162443161011,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "qcnh773ye5c74yf168aih6rbd_210.jpg",
+   "panoId": "qcnh773ye5c74yf168aih6rbd",
+   "panoLabel": "7",
+   "roomId": "h26t7ky77ew74yb0pg8qqf5rd",
+   "x": -5.809380531311035,
+   "y": -0.6216162443161011,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "qcnh773ye5c74yf168aih6rbd_240.jpg",
+   "panoId": "qcnh773ye5c74yf168aih6rbd",
+   "panoLabel": "7",
+   "roomId": "h26t7ky77ew74yb0pg8qqf5rd",
+   "x": -5.809380531311035,
+   "y": -0.6216162443161011,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "qcnh773ye5c74yf168aih6rbd_270.jpg",
+   "panoId": "qcnh773ye5c74yf168aih6rbd",
+   "panoLabel": "7",
+   "roomId": "h26t7ky77ew74yb0pg8qqf5rd",
+   "x": -5.809380531311035,
+   "y": -0.6216162443161011,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "qcnh773ye5c74yf168aih6rbd_300.jpg",
+   "panoId": "qcnh773ye5c74yf168aih6rbd",
+   "panoLabel": "7",
+   "roomId": "h26t7ky77ew74yb0pg8qqf5rd",
+   "x": -5.809380531311035,
+   "y": -0.6216162443161011,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "qcnh773ye5c74yf168aih6rbd_330.jpg",
+   "panoId": "qcnh773ye5c74yf168aih6rbd",
+   "panoLabel": "7",
+   "roomId": "h26t7ky77ew74yb0pg8qqf5rd",
+   "x": -5.809380531311035,
+   "y": -0.6216162443161011,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "sc8sntzpq7negkpnu6chik7hd_000.jpg",
+   "panoId": "sc8sntzpq7negkpnu6chik7hd",
+   "panoLabel": "14",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -9.192062377929688,
+   "y": 2.5939409732818604,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "sc8sntzpq7negkpnu6chik7hd_030.jpg",
+   "panoId": "sc8sntzpq7negkpnu6chik7hd",
+   "panoLabel": "14",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -9.192062377929688,
+   "y": 2.5939409732818604,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "sc8sntzpq7negkpnu6chik7hd_060.jpg",
+   "panoId": "sc8sntzpq7negkpnu6chik7hd",
+   "panoLabel": "14",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -9.192062377929688,
+   "y": 2.5939409732818604,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "sc8sntzpq7negkpnu6chik7hd_090.jpg",
+   "panoId": "sc8sntzpq7negkpnu6chik7hd",
+   "panoLabel": "14",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -9.192062377929688,
+   "y": 2.5939409732818604,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "sc8sntzpq7negkpnu6chik7hd_120.jpg",
+   "panoId": "sc8sntzpq7negkpnu6chik7hd",
+   "panoLabel": "14",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -9.192062377929688,
+   "y": 2.5939409732818604,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "sc8sntzpq7negkpnu6chik7hd_150.jpg",
+   "panoId": "sc8sntzpq7negkpnu6chik7hd",
+   "panoLabel": "14",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -9.192062377929688,
+   "y": 2.5939409732818604,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "sc8sntzpq7negkpnu6chik7hd_180.jpg",
+   "panoId": "sc8sntzpq7negkpnu6chik7hd",
+   "panoLabel": "14",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -9.192062377929688,
+   "y": 2.5939409732818604,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "sc8sntzpq7negkpnu6chik7hd_210.jpg",
+   "panoId": "sc8sntzpq7negkpnu6chik7hd",
+   "panoLabel": "14",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -9.192062377929688,
+   "y": 2.5939409732818604,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "sc8sntzpq7negkpnu6chik7hd_240.jpg",
+   "panoId": "sc8sntzpq7negkpnu6chik7hd",
+   "panoLabel": "14",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -9.192062377929688,
+   "y": 2.5939409732818604,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "sc8sntzpq7negkpnu6chik7hd_270.jpg",
+   "panoId": "sc8sntzpq7negkpnu6chik7hd",
+   "panoLabel": "14",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -9.192062377929688,
+   "y": 2.5939409732818604,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "sc8sntzpq7negkpnu6chik7hd_300.jpg",
+   "panoId": "sc8sntzpq7negkpnu6chik7hd",
+   "panoLabel": "14",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -9.192062377929688,
+   "y": 2.5939409732818604,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "sc8sntzpq7negkpnu6chik7hd_330.jpg",
+   "panoId": "sc8sntzpq7negkpnu6chik7hd",
+   "panoLabel": "14",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -9.192062377929688,
+   "y": 2.5939409732818604,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "tc4isetcrb96f87dgbhbcfpib_000.jpg",
+   "panoId": "tc4isetcrb96f87dgbhbcfpib",
+   "panoLabel": "11",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.165966033935547,
+   "y": -0.7354400157928467,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "tc4isetcrb96f87dgbhbcfpib_030.jpg",
+   "panoId": "tc4isetcrb96f87dgbhbcfpib",
+   "panoLabel": "11",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.165966033935547,
+   "y": -0.7354400157928467,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "tc4isetcrb96f87dgbhbcfpib_060.jpg",
+   "panoId": "tc4isetcrb96f87dgbhbcfpib",
+   "panoLabel": "11",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.165966033935547,
+   "y": -0.7354400157928467,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "tc4isetcrb96f87dgbhbcfpib_090.jpg",
+   "panoId": "tc4isetcrb96f87dgbhbcfpib",
+   "panoLabel": "11",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.165966033935547,
+   "y": -0.7354400157928467,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "tc4isetcrb96f87dgbhbcfpib_120.jpg",
+   "panoId": "tc4isetcrb96f87dgbhbcfpib",
+   "panoLabel": "11",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.165966033935547,
+   "y": -0.7354400157928467,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "tc4isetcrb96f87dgbhbcfpib_150.jpg",
+   "panoId": "tc4isetcrb96f87dgbhbcfpib",
+   "panoLabel": "11",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.165966033935547,
+   "y": -0.7354400157928467,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "tc4isetcrb96f87dgbhbcfpib_180.jpg",
+   "panoId": "tc4isetcrb96f87dgbhbcfpib",
+   "panoLabel": "11",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.165966033935547,
+   "y": -0.7354400157928467,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "tc4isetcrb96f87dgbhbcfpib_210.jpg",
+   "panoId": "tc4isetcrb96f87dgbhbcfpib",
+   "panoLabel": "11",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.165966033935547,
+   "y": -0.7354400157928467,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "tc4isetcrb96f87dgbhbcfpib_240.jpg",
+   "panoId": "tc4isetcrb96f87dgbhbcfpib",
+   "panoLabel": "11",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.165966033935547,
+   "y": -0.7354400157928467,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "tc4isetcrb96f87dgbhbcfpib_270.jpg",
+   "panoId": "tc4isetcrb96f87dgbhbcfpib",
+   "panoLabel": "11",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.165966033935547,
+   "y": -0.7354400157928467,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "tc4isetcrb96f87dgbhbcfpib_300.jpg",
+   "panoId": "tc4isetcrb96f87dgbhbcfpib",
+   "panoLabel": "11",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.165966033935547,
+   "y": -0.7354400157928467,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "tc4isetcrb96f87dgbhbcfpib_330.jpg",
+   "panoId": "tc4isetcrb96f87dgbhbcfpib",
+   "panoLabel": "11",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -9.165966033935547,
+   "y": -0.7354400157928467,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "dxnchmd4kuyk6edzih4r9pxkb_000.jpg",
+   "panoId": "dxnchmd4kuyk6edzih4r9pxkb",
+   "panoLabel": "12",
+   "roomId": "a5f9age4zzxewres6iqux2emc",
+   "x": -9.239250183105469,
+   "y": -0.025369197130203247,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "dxnchmd4kuyk6edzih4r9pxkb_030.jpg",
+   "panoId": "dxnchmd4kuyk6edzih4r9pxkb",
+   "panoLabel": "12",
+   "roomId": "a5f9age4zzxewres6iqux2emc",
+   "x": -9.239250183105469,
+   "y": -0.025369197130203247,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "dxnchmd4kuyk6edzih4r9pxkb_060.jpg",
+   "panoId": "dxnchmd4kuyk6edzih4r9pxkb",
+   "panoLabel": "12",
+   "roomId": "a5f9age4zzxewres6iqux2emc",
+   "x": -9.239250183105469,
+   "y": -0.025369197130203247,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "dxnchmd4kuyk6edzih4r9pxkb_090.jpg",
+   "panoId": "dxnchmd4kuyk6edzih4r9pxkb",
+   "panoLabel": "12",
+   "roomId": "a5f9age4zzxewres6iqux2emc",
+   "x": -9.239250183105469,
+   "y": -0.025369197130203247,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "dxnchmd4kuyk6edzih4r9pxkb_120.jpg",
+   "panoId": "dxnchmd4kuyk6edzih4r9pxkb",
+   "panoLabel": "12",
+   "roomId": "a5f9age4zzxewres6iqux2emc",
+   "x": -9.239250183105469,
+   "y": -0.025369197130203247,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "dxnchmd4kuyk6edzih4r9pxkb_150.jpg",
+   "panoId": "dxnchmd4kuyk6edzih4r9pxkb",
+   "panoLabel": "12",
+   "roomId": "a5f9age4zzxewres6iqux2emc",
+   "x": -9.239250183105469,
+   "y": -0.025369197130203247,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "dxnchmd4kuyk6edzih4r9pxkb_180.jpg",
+   "panoId": "dxnchmd4kuyk6edzih4r9pxkb",
+   "panoLabel": "12",
+   "roomId": "a5f9age4zzxewres6iqux2emc",
+   "x": -9.239250183105469,
+   "y": -0.025369197130203247,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "dxnchmd4kuyk6edzih4r9pxkb_210.jpg",
+   "panoId": "dxnchmd4kuyk6edzih4r9pxkb",
+   "panoLabel": "12",
+   "roomId": "a5f9age4zzxewres6iqux2emc",
+   "x": -9.239250183105469,
+   "y": -0.025369197130203247,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "dxnchmd4kuyk6edzih4r9pxkb_240.jpg",
+   "panoId": "dxnchmd4kuyk6edzih4r9pxkb",
+   "panoLabel": "12",
+   "roomId": "a5f9age4zzxewres6iqux2emc",
+   "x": -9.239250183105469,
+   "y": -0.025369197130203247,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "dxnchmd4kuyk6edzih4r9pxkb_270.jpg",
+   "panoId": "dxnchmd4kuyk6edzih4r9pxkb",
+   "panoLabel": "12",
+   "roomId": "a5f9age4zzxewres6iqux2emc",
+   "x": -9.239250183105469,
+   "y": -0.025369197130203247,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "dxnchmd4kuyk6edzih4r9pxkb_300.jpg",
+   "panoId": "dxnchmd4kuyk6edzih4r9pxkb",
+   "panoLabel": "12",
+   "roomId": "a5f9age4zzxewres6iqux2emc",
+   "x": -9.239250183105469,
+   "y": -0.025369197130203247,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "dxnchmd4kuyk6edzih4r9pxkb_330.jpg",
+   "panoId": "dxnchmd4kuyk6edzih4r9pxkb",
+   "panoLabel": "12",
+   "roomId": "a5f9age4zzxewres6iqux2emc",
+   "x": -9.239250183105469,
+   "y": -0.025369197130203247,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "kdczx7s82gzp8ka44a2dz5yyc_000.jpg",
+   "panoId": "kdczx7s82gzp8ka44a2dz5yyc",
+   "panoLabel": "6",
+   "roomId": "9hauvfhwiqt",
+   "x": -5.745597839355469,
+   "y": 0.3070812225341797,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "kdczx7s82gzp8ka44a2dz5yyc_030.jpg",
+   "panoId": "kdczx7s82gzp8ka44a2dz5yyc",
+   "panoLabel": "6",
+   "roomId": "9hauvfhwiqt",
+   "x": -5.745597839355469,
+   "y": 0.3070812225341797,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "kdczx7s82gzp8ka44a2dz5yyc_060.jpg",
+   "panoId": "kdczx7s82gzp8ka44a2dz5yyc",
+   "panoLabel": "6",
+   "roomId": "9hauvfhwiqt",
+   "x": -5.745597839355469,
+   "y": 0.3070812225341797,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "kdczx7s82gzp8ka44a2dz5yyc_090.jpg",
+   "panoId": "kdczx7s82gzp8ka44a2dz5yyc",
+   "panoLabel": "6",
+   "roomId": "9hauvfhwiqt",
+   "x": -5.745597839355469,
+   "y": 0.3070812225341797,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "kdczx7s82gzp8ka44a2dz5yyc_120.jpg",
+   "panoId": "kdczx7s82gzp8ka44a2dz5yyc",
+   "panoLabel": "6",
+   "roomId": "9hauvfhwiqt",
+   "x": -5.745597839355469,
+   "y": 0.3070812225341797,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "kdczx7s82gzp8ka44a2dz5yyc_150.jpg",
+   "panoId": "kdczx7s82gzp8ka44a2dz5yyc",
+   "panoLabel": "6",
+   "roomId": "9hauvfhwiqt",
+   "x": -5.745597839355469,
+   "y": 0.3070812225341797,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "kdczx7s82gzp8ka44a2dz5yyc_180.jpg",
+   "panoId": "kdczx7s82gzp8ka44a2dz5yyc",
+   "panoLabel": "6",
+   "roomId": "9hauvfhwiqt",
+   "x": -5.745597839355469,
+   "y": 0.3070812225341797,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "kdczx7s82gzp8ka44a2dz5yyc_210.jpg",
+   "panoId": "kdczx7s82gzp8ka44a2dz5yyc",
+   "panoLabel": "6",
+   "roomId": "9hauvfhwiqt",
+   "x": -5.745597839355469,
+   "y": 0.3070812225341797,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "kdczx7s82gzp8ka44a2dz5yyc_240.jpg",
+   "panoId": "kdczx7s82gzp8ka44a2dz5yyc",
+   "panoLabel": "6",
+   "roomId": "9hauvfhwiqt",
+   "x": -5.745597839355469,
+   "y": 0.3070812225341797,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "kdczx7s82gzp8ka44a2dz5yyc_270.jpg",
+   "panoId": "kdczx7s82gzp8ka44a2dz5yyc",
+   "panoLabel": "6",
+   "roomId": "9hauvfhwiqt",
+   "x": -5.745597839355469,
+   "y": 0.3070812225341797,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "kdczx7s82gzp8ka44a2dz5yyc_300.jpg",
+   "panoId": "kdczx7s82gzp8ka44a2dz5yyc",
+   "panoLabel": "6",
+   "roomId": "9hauvfhwiqt",
+   "x": -5.745597839355469,
+   "y": 0.3070812225341797,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "kdczx7s82gzp8ka44a2dz5yyc_330.jpg",
+   "panoId": "kdczx7s82gzp8ka44a2dz5yyc",
+   "panoLabel": "6",
+   "roomId": "9hauvfhwiqt",
+   "x": -5.745597839355469,
+   "y": 0.3070812225341797,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "8xqd4p9fbp6pnhxxb3qny5yxb_000.jpg",
+   "panoId": "8xqd4p9fbp6pnhxxb3qny5yxb",
+   "panoLabel": "18",
+   "roomId": "2qdmc5i9byxi79ry1pxdkqzea",
+   "x": -5.77060604095459,
+   "y": 3.1335620880126953,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "8xqd4p9fbp6pnhxxb3qny5yxb_030.jpg",
+   "panoId": "8xqd4p9fbp6pnhxxb3qny5yxb",
+   "panoLabel": "18",
+   "roomId": "2qdmc5i9byxi79ry1pxdkqzea",
+   "x": -5.77060604095459,
+   "y": 3.1335620880126953,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "8xqd4p9fbp6pnhxxb3qny5yxb_060.jpg",
+   "panoId": "8xqd4p9fbp6pnhxxb3qny5yxb",
+   "panoLabel": "18",
+   "roomId": "2qdmc5i9byxi79ry1pxdkqzea",
+   "x": -5.77060604095459,
+   "y": 3.1335620880126953,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "8xqd4p9fbp6pnhxxb3qny5yxb_090.jpg",
+   "panoId": "8xqd4p9fbp6pnhxxb3qny5yxb",
+   "panoLabel": "18",
+   "roomId": "2qdmc5i9byxi79ry1pxdkqzea",
+   "x": -5.77060604095459,
+   "y": 3.1335620880126953,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "8xqd4p9fbp6pnhxxb3qny5yxb_120.jpg",
+   "panoId": "8xqd4p9fbp6pnhxxb3qny5yxb",
+   "panoLabel": "18",
+   "roomId": "2qdmc5i9byxi79ry1pxdkqzea",
+   "x": -5.77060604095459,
+   "y": 3.1335620880126953,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "8xqd4p9fbp6pnhxxb3qny5yxb_150.jpg",
+   "panoId": "8xqd4p9fbp6pnhxxb3qny5yxb",
+   "panoLabel": "18",
+   "roomId": "2qdmc5i9byxi79ry1pxdkqzea",
+   "x": -5.77060604095459,
+   "y": 3.1335620880126953,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "8xqd4p9fbp6pnhxxb3qny5yxb_180.jpg",
+   "panoId": "8xqd4p9fbp6pnhxxb3qny5yxb",
+   "panoLabel": "18",
+   "roomId": "2qdmc5i9byxi79ry1pxdkqzea",
+   "x": -5.77060604095459,
+   "y": 3.1335620880126953,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "8xqd4p9fbp6pnhxxb3qny5yxb_210.jpg",
+   "panoId": "8xqd4p9fbp6pnhxxb3qny5yxb",
+   "panoLabel": "18",
+   "roomId": "2qdmc5i9byxi79ry1pxdkqzea",
+   "x": -5.77060604095459,
+   "y": 3.1335620880126953,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "8xqd4p9fbp6pnhxxb3qny5yxb_240.jpg",
+   "panoId": "8xqd4p9fbp6pnhxxb3qny5yxb",
+   "panoLabel": "18",
+   "roomId": "2qdmc5i9byxi79ry1pxdkqzea",
+   "x": -5.77060604095459,
+   "y": 3.1335620880126953,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "8xqd4p9fbp6pnhxxb3qny5yxb_270.jpg",
+   "panoId": "8xqd4p9fbp6pnhxxb3qny5yxb",
+   "panoLabel": "18",
+   "roomId": "2qdmc5i9byxi79ry1pxdkqzea",
+   "x": -5.77060604095459,
+   "y": 3.1335620880126953,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "8xqd4p9fbp6pnhxxb3qny5yxb_300.jpg",
+   "panoId": "8xqd4p9fbp6pnhxxb3qny5yxb",
+   "panoLabel": "18",
+   "roomId": "2qdmc5i9byxi79ry1pxdkqzea",
+   "x": -5.77060604095459,
+   "y": 3.1335620880126953,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "8xqd4p9fbp6pnhxxb3qny5yxb_330.jpg",
+   "panoId": "8xqd4p9fbp6pnhxxb3qny5yxb",
+   "panoLabel": "18",
+   "roomId": "2qdmc5i9byxi79ry1pxdkqzea",
+   "x": -5.77060604095459,
+   "y": 3.1335620880126953,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "ae9bx05k91arsenmzqnakxqpa_000.jpg",
+   "panoId": "ae9bx05k91arsenmzqnakxqpa",
+   "panoLabel": "15",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -7.037692546844482,
+   "y": 2.939396858215332,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "ae9bx05k91arsenmzqnakxqpa_030.jpg",
+   "panoId": "ae9bx05k91arsenmzqnakxqpa",
+   "panoLabel": "15",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -7.037692546844482,
+   "y": 2.939396858215332,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "ae9bx05k91arsenmzqnakxqpa_060.jpg",
+   "panoId": "ae9bx05k91arsenmzqnakxqpa",
+   "panoLabel": "15",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -7.037692546844482,
+   "y": 2.939396858215332,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "ae9bx05k91arsenmzqnakxqpa_090.jpg",
+   "panoId": "ae9bx05k91arsenmzqnakxqpa",
+   "panoLabel": "15",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -7.037692546844482,
+   "y": 2.939396858215332,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "ae9bx05k91arsenmzqnakxqpa_120.jpg",
+   "panoId": "ae9bx05k91arsenmzqnakxqpa",
+   "panoLabel": "15",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -7.037692546844482,
+   "y": 2.939396858215332,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "ae9bx05k91arsenmzqnakxqpa_150.jpg",
+   "panoId": "ae9bx05k91arsenmzqnakxqpa",
+   "panoLabel": "15",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -7.037692546844482,
+   "y": 2.939396858215332,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "ae9bx05k91arsenmzqnakxqpa_180.jpg",
+   "panoId": "ae9bx05k91arsenmzqnakxqpa",
+   "panoLabel": "15",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -7.037692546844482,
+   "y": 2.939396858215332,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "ae9bx05k91arsenmzqnakxqpa_210.jpg",
+   "panoId": "ae9bx05k91arsenmzqnakxqpa",
+   "panoLabel": "15",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -7.037692546844482,
+   "y": 2.939396858215332,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "ae9bx05k91arsenmzqnakxqpa_240.jpg",
+   "panoId": "ae9bx05k91arsenmzqnakxqpa",
+   "panoLabel": "15",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -7.037692546844482,
+   "y": 2.939396858215332,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "ae9bx05k91arsenmzqnakxqpa_270.jpg",
+   "panoId": "ae9bx05k91arsenmzqnakxqpa",
+   "panoLabel": "15",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -7.037692546844482,
+   "y": 2.939396858215332,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "ae9bx05k91arsenmzqnakxqpa_300.jpg",
+   "panoId": "ae9bx05k91arsenmzqnakxqpa",
+   "panoLabel": "15",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -7.037692546844482,
+   "y": 2.939396858215332,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "ae9bx05k91arsenmzqnakxqpa_330.jpg",
+   "panoId": "ae9bx05k91arsenmzqnakxqpa",
+   "panoLabel": "15",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -7.037692546844482,
+   "y": 2.939396858215332,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "f6xt5f00dt57318beh64e5meb_000.jpg",
+   "panoId": "f6xt5f00dt57318beh64e5meb",
+   "panoLabel": "13",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.901941299438477,
+   "y": 1.2656892538070679,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "f6xt5f00dt57318beh64e5meb_030.jpg",
+   "panoId": "f6xt5f00dt57318beh64e5meb",
+   "panoLabel": "13",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.901941299438477,
+   "y": 1.2656892538070679,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "f6xt5f00dt57318beh64e5meb_060.jpg",
+   "panoId": "f6xt5f00dt57318beh64e5meb",
+   "panoLabel": "13",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.901941299438477,
+   "y": 1.2656892538070679,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "f6xt5f00dt57318beh64e5meb_090.jpg",
+   "panoId": "f6xt5f00dt57318beh64e5meb",
+   "panoLabel": "13",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.901941299438477,
+   "y": 1.2656892538070679,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "f6xt5f00dt57318beh64e5meb_120.jpg",
+   "panoId": "f6xt5f00dt57318beh64e5meb",
+   "panoLabel": "13",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.901941299438477,
+   "y": 1.2656892538070679,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "f6xt5f00dt57318beh64e5meb_150.jpg",
+   "panoId": "f6xt5f00dt57318beh64e5meb",
+   "panoLabel": "13",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.901941299438477,
+   "y": 1.2656892538070679,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "f6xt5f00dt57318beh64e5meb_180.jpg",
+   "panoId": "f6xt5f00dt57318beh64e5meb",
+   "panoLabel": "13",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.901941299438477,
+   "y": 1.2656892538070679,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "f6xt5f00dt57318beh64e5meb_210.jpg",
+   "panoId": "f6xt5f00dt57318beh64e5meb",
+   "panoLabel": "13",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.901941299438477,
+   "y": 1.2656892538070679,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "f6xt5f00dt57318beh64e5meb_240.jpg",
+   "panoId": "f6xt5f00dt57318beh64e5meb",
+   "panoLabel": "13",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.901941299438477,
+   "y": 1.2656892538070679,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "f6xt5f00dt57318beh64e5meb_270.jpg",
+   "panoId": "f6xt5f00dt57318beh64e5meb",
+   "panoLabel": "13",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.901941299438477,
+   "y": 1.2656892538070679,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "f6xt5f00dt57318beh64e5meb_300.jpg",
+   "panoId": "f6xt5f00dt57318beh64e5meb",
+   "panoLabel": "13",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.901941299438477,
+   "y": 1.2656892538070679,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "f6xt5f00dt57318beh64e5meb_330.jpg",
+   "panoId": "f6xt5f00dt57318beh64e5meb",
+   "panoLabel": "13",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.901941299438477,
+   "y": 1.2656892538070679,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "6y2p9yra1knrxxtciaw40uymd_000.jpg",
+   "panoId": "6y2p9yra1knrxxtciaw40uymd",
+   "panoLabel": "17",
+   "roomId": "3m54yff1z7crxaywd8if9rb0d",
+   "x": -5.934249401092529,
+   "y": 1.6669743061065674,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "6y2p9yra1knrxxtciaw40uymd_030.jpg",
+   "panoId": "6y2p9yra1knrxxtciaw40uymd",
+   "panoLabel": "17",
+   "roomId": "3m54yff1z7crxaywd8if9rb0d",
+   "x": -5.934249401092529,
+   "y": 1.6669743061065674,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "6y2p9yra1knrxxtciaw40uymd_060.jpg",
+   "panoId": "6y2p9yra1knrxxtciaw40uymd",
+   "panoLabel": "17",
+   "roomId": "3m54yff1z7crxaywd8if9rb0d",
+   "x": -5.934249401092529,
+   "y": 1.6669743061065674,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "6y2p9yra1knrxxtciaw40uymd_090.jpg",
+   "panoId": "6y2p9yra1knrxxtciaw40uymd",
+   "panoLabel": "17",
+   "roomId": "3m54yff1z7crxaywd8if9rb0d",
+   "x": -5.934249401092529,
+   "y": 1.6669743061065674,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "6y2p9yra1knrxxtciaw40uymd_120.jpg",
+   "panoId": "6y2p9yra1knrxxtciaw40uymd",
+   "panoLabel": "17",
+   "roomId": "3m54yff1z7crxaywd8if9rb0d",
+   "x": -5.934249401092529,
+   "y": 1.6669743061065674,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "6y2p9yra1knrxxtciaw40uymd_150.jpg",
+   "panoId": "6y2p9yra1knrxxtciaw40uymd",
+   "panoLabel": "17",
+   "roomId": "3m54yff1z7crxaywd8if9rb0d",
+   "x": -5.934249401092529,
+   "y": 1.6669743061065674,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "6y2p9yra1knrxxtciaw40uymd_180.jpg",
+   "panoId": "6y2p9yra1knrxxtciaw40uymd",
+   "panoLabel": "17",
+   "roomId": "3m54yff1z7crxaywd8if9rb0d",
+   "x": -5.934249401092529,
+   "y": 1.6669743061065674,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "6y2p9yra1knrxxtciaw40uymd_210.jpg",
+   "panoId": "6y2p9yra1knrxxtciaw40uymd",
+   "panoLabel": "17",
+   "roomId": "3m54yff1z7crxaywd8if9rb0d",
+   "x": -5.934249401092529,
+   "y": 1.6669743061065674,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "6y2p9yra1knrxxtciaw40uymd_240.jpg",
+   "panoId": "6y2p9yra1knrxxtciaw40uymd",
+   "panoLabel": "17",
+   "roomId": "3m54yff1z7crxaywd8if9rb0d",
+   "x": -5.934249401092529,
+   "y": 1.6669743061065674,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "6y2p9yra1knrxxtciaw40uymd_270.jpg",
+   "panoId": "6y2p9yra1knrxxtciaw40uymd",
+   "panoLabel": "17",
+   "roomId": "3m54yff1z7crxaywd8if9rb0d",
+   "x": -5.934249401092529,
+   "y": 1.6669743061065674,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "6y2p9yra1knrxxtciaw40uymd_300.jpg",
+   "panoId": "6y2p9yra1knrxxtciaw40uymd",
+   "panoLabel": "17",
+   "roomId": "3m54yff1z7crxaywd8if9rb0d",
+   "x": -5.934249401092529,
+   "y": 1.6669743061065674,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "6y2p9yra1knrxxtciaw40uymd_330.jpg",
+   "panoId": "6y2p9yra1knrxxtciaw40uymd",
+   "panoLabel": "17",
+   "roomId": "3m54yff1z7crxaywd8if9rb0d",
+   "x": -5.934249401092529,
+   "y": 1.6669743061065674,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "gfs36hea9yuztmcxutkf38ipa_000.jpg",
+   "panoId": "gfs36hea9yuztmcxutkf38ipa",
+   "panoLabel": "3",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.9978973865509033,
+   "y": 0.31331050395965576,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "gfs36hea9yuztmcxutkf38ipa_030.jpg",
+   "panoId": "gfs36hea9yuztmcxutkf38ipa",
+   "panoLabel": "3",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.9978973865509033,
+   "y": 0.31331050395965576,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "gfs36hea9yuztmcxutkf38ipa_060.jpg",
+   "panoId": "gfs36hea9yuztmcxutkf38ipa",
+   "panoLabel": "3",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.9978973865509033,
+   "y": 0.31331050395965576,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "gfs36hea9yuztmcxutkf38ipa_090.jpg",
+   "panoId": "gfs36hea9yuztmcxutkf38ipa",
+   "panoLabel": "3",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.9978973865509033,
+   "y": 0.31331050395965576,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "gfs36hea9yuztmcxutkf38ipa_120.jpg",
+   "panoId": "gfs36hea9yuztmcxutkf38ipa",
+   "panoLabel": "3",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.9978973865509033,
+   "y": 0.31331050395965576,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "gfs36hea9yuztmcxutkf38ipa_150.jpg",
+   "panoId": "gfs36hea9yuztmcxutkf38ipa",
+   "panoLabel": "3",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.9978973865509033,
+   "y": 0.31331050395965576,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "gfs36hea9yuztmcxutkf38ipa_180.jpg",
+   "panoId": "gfs36hea9yuztmcxutkf38ipa",
+   "panoLabel": "3",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.9978973865509033,
+   "y": 0.31331050395965576,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "gfs36hea9yuztmcxutkf38ipa_210.jpg",
+   "panoId": "gfs36hea9yuztmcxutkf38ipa",
+   "panoLabel": "3",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.9978973865509033,
+   "y": 0.31331050395965576,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "gfs36hea9yuztmcxutkf38ipa_240.jpg",
+   "panoId": "gfs36hea9yuztmcxutkf38ipa",
+   "panoLabel": "3",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.9978973865509033,
+   "y": 0.31331050395965576,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "gfs36hea9yuztmcxutkf38ipa_270.jpg",
+   "panoId": "gfs36hea9yuztmcxutkf38ipa",
+   "panoLabel": "3",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.9978973865509033,
+   "y": 0.31331050395965576,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "gfs36hea9yuztmcxutkf38ipa_300.jpg",
+   "panoId": "gfs36hea9yuztmcxutkf38ipa",
+   "panoLabel": "3",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.9978973865509033,
+   "y": 0.31331050395965576,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "gfs36hea9yuztmcxutkf38ipa_330.jpg",
+   "panoId": "gfs36hea9yuztmcxutkf38ipa",
+   "panoLabel": "3",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -1.9978973865509033,
+   "y": 0.31331050395965576,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "s7ez34cs191mhxw2sp0mhp6ic_000.jpg",
+   "panoId": "s7ez34cs191mhxw2sp0mhp6ic",
+   "panoLabel": "0",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": 0.0,
+   "y": 0.0,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "s7ez34cs191mhxw2sp0mhp6ic_030.jpg",
+   "panoId": "s7ez34cs191mhxw2sp0mhp6ic",
+   "panoLabel": "0",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": 0.0,
+   "y": 0.0,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "s7ez34cs191mhxw2sp0mhp6ic_060.jpg",
+   "panoId": "s7ez34cs191mhxw2sp0mhp6ic",
+   "panoLabel": "0",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": 0.0,
+   "y": 0.0,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "s7ez34cs191mhxw2sp0mhp6ic_090.jpg",
+   "panoId": "s7ez34cs191mhxw2sp0mhp6ic",
+   "panoLabel": "0",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": 0.0,
+   "y": 0.0,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "s7ez34cs191mhxw2sp0mhp6ic_120.jpg",
+   "panoId": "s7ez34cs191mhxw2sp0mhp6ic",
+   "panoLabel": "0",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": 0.0,
+   "y": 0.0,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "s7ez34cs191mhxw2sp0mhp6ic_150.jpg",
+   "panoId": "s7ez34cs191mhxw2sp0mhp6ic",
+   "panoLabel": "0",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": 0.0,
+   "y": 0.0,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "s7ez34cs191mhxw2sp0mhp6ic_180.jpg",
+   "panoId": "s7ez34cs191mhxw2sp0mhp6ic",
+   "panoLabel": "0",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": 0.0,
+   "y": 0.0,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "s7ez34cs191mhxw2sp0mhp6ic_210.jpg",
+   "panoId": "s7ez34cs191mhxw2sp0mhp6ic",
+   "panoLabel": "0",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": 0.0,
+   "y": 0.0,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "s7ez34cs191mhxw2sp0mhp6ic_240.jpg",
+   "panoId": "s7ez34cs191mhxw2sp0mhp6ic",
+   "panoLabel": "0",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": 0.0,
+   "y": 0.0,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "s7ez34cs191mhxw2sp0mhp6ic_270.jpg",
+   "panoId": "s7ez34cs191mhxw2sp0mhp6ic",
+   "panoLabel": "0",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": 0.0,
+   "y": 0.0,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "s7ez34cs191mhxw2sp0mhp6ic_300.jpg",
+   "panoId": "s7ez34cs191mhxw2sp0mhp6ic",
+   "panoLabel": "0",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": 0.0,
+   "y": 0.0,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "s7ez34cs191mhxw2sp0mhp6ic_330.jpg",
+   "panoId": "s7ez34cs191mhxw2sp0mhp6ic",
+   "panoLabel": "0",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": 0.0,
+   "y": 0.0,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "m80qarcm1bh3hh6ryfteardeb_000.jpg",
+   "panoId": "m80qarcm1bh3hh6ryfteardeb",
+   "panoLabel": "9",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -7.136830806732178,
+   "y": -0.7542487382888794,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "m80qarcm1bh3hh6ryfteardeb_030.jpg",
+   "panoId": "m80qarcm1bh3hh6ryfteardeb",
+   "panoLabel": "9",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -7.136830806732178,
+   "y": -0.7542487382888794,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "m80qarcm1bh3hh6ryfteardeb_060.jpg",
+   "panoId": "m80qarcm1bh3hh6ryfteardeb",
+   "panoLabel": "9",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -7.136830806732178,
+   "y": -0.7542487382888794,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "m80qarcm1bh3hh6ryfteardeb_090.jpg",
+   "panoId": "m80qarcm1bh3hh6ryfteardeb",
+   "panoLabel": "9",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -7.136830806732178,
+   "y": -0.7542487382888794,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "m80qarcm1bh3hh6ryfteardeb_120.jpg",
+   "panoId": "m80qarcm1bh3hh6ryfteardeb",
+   "panoLabel": "9",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -7.136830806732178,
+   "y": -0.7542487382888794,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "m80qarcm1bh3hh6ryfteardeb_150.jpg",
+   "panoId": "m80qarcm1bh3hh6ryfteardeb",
+   "panoLabel": "9",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -7.136830806732178,
+   "y": -0.7542487382888794,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "m80qarcm1bh3hh6ryfteardeb_180.jpg",
+   "panoId": "m80qarcm1bh3hh6ryfteardeb",
+   "panoLabel": "9",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -7.136830806732178,
+   "y": -0.7542487382888794,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "m80qarcm1bh3hh6ryfteardeb_210.jpg",
+   "panoId": "m80qarcm1bh3hh6ryfteardeb",
+   "panoLabel": "9",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -7.136830806732178,
+   "y": -0.7542487382888794,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "m80qarcm1bh3hh6ryfteardeb_240.jpg",
+   "panoId": "m80qarcm1bh3hh6ryfteardeb",
+   "panoLabel": "9",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -7.136830806732178,
+   "y": -0.7542487382888794,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "m80qarcm1bh3hh6ryfteardeb_270.jpg",
+   "panoId": "m80qarcm1bh3hh6ryfteardeb",
+   "panoLabel": "9",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -7.136830806732178,
+   "y": -0.7542487382888794,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "m80qarcm1bh3hh6ryfteardeb_300.jpg",
+   "panoId": "m80qarcm1bh3hh6ryfteardeb",
+   "panoLabel": "9",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -7.136830806732178,
+   "y": -0.7542487382888794,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "m80qarcm1bh3hh6ryfteardeb_330.jpg",
+   "panoId": "m80qarcm1bh3hh6ryfteardeb",
+   "panoLabel": "9",
+   "roomId": "xy2x8mpaaqknp7q2c3nnbw1ma",
+   "x": -7.136830806732178,
+   "y": -0.7542487382888794,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "18pgiyek12dyt51p11x9eedkb_000.jpg",
+   "panoId": "18pgiyek12dyt51p11x9eedkb",
+   "panoLabel": "4",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -3.359187126159668,
+   "y": 0.29196715354919434,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "18pgiyek12dyt51p11x9eedkb_030.jpg",
+   "panoId": "18pgiyek12dyt51p11x9eedkb",
+   "panoLabel": "4",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -3.359187126159668,
+   "y": 0.29196715354919434,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "18pgiyek12dyt51p11x9eedkb_060.jpg",
+   "panoId": "18pgiyek12dyt51p11x9eedkb",
+   "panoLabel": "4",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -3.359187126159668,
+   "y": 0.29196715354919434,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "18pgiyek12dyt51p11x9eedkb_090.jpg",
+   "panoId": "18pgiyek12dyt51p11x9eedkb",
+   "panoLabel": "4",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -3.359187126159668,
+   "y": 0.29196715354919434,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "18pgiyek12dyt51p11x9eedkb_120.jpg",
+   "panoId": "18pgiyek12dyt51p11x9eedkb",
+   "panoLabel": "4",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -3.359187126159668,
+   "y": 0.29196715354919434,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "18pgiyek12dyt51p11x9eedkb_150.jpg",
+   "panoId": "18pgiyek12dyt51p11x9eedkb",
+   "panoLabel": "4",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -3.359187126159668,
+   "y": 0.29196715354919434,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "18pgiyek12dyt51p11x9eedkb_180.jpg",
+   "panoId": "18pgiyek12dyt51p11x9eedkb",
+   "panoLabel": "4",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -3.359187126159668,
+   "y": 0.29196715354919434,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "18pgiyek12dyt51p11x9eedkb_210.jpg",
+   "panoId": "18pgiyek12dyt51p11x9eedkb",
+   "panoLabel": "4",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -3.359187126159668,
+   "y": 0.29196715354919434,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "18pgiyek12dyt51p11x9eedkb_240.jpg",
+   "panoId": "18pgiyek12dyt51p11x9eedkb",
+   "panoLabel": "4",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -3.359187126159668,
+   "y": 0.29196715354919434,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "18pgiyek12dyt51p11x9eedkb_270.jpg",
+   "panoId": "18pgiyek12dyt51p11x9eedkb",
+   "panoLabel": "4",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -3.359187126159668,
+   "y": 0.29196715354919434,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "18pgiyek12dyt51p11x9eedkb_300.jpg",
+   "panoId": "18pgiyek12dyt51p11x9eedkb",
+   "panoLabel": "4",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -3.359187126159668,
+   "y": 0.29196715354919434,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "18pgiyek12dyt51p11x9eedkb_330.jpg",
+   "panoId": "18pgiyek12dyt51p11x9eedkb",
+   "panoLabel": "4",
+   "roomId": "613htqkzf66zz7hf7n8kzszed",
+   "x": -3.359187126159668,
+   "y": 0.29196715354919434,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "whw7m0qh329k22bsnzmkz69nd_000.jpg",
+   "panoId": "whw7m0qh329k22bsnzmkz69nd",
+   "panoLabel": "8",
+   "roomId": "9hauvfhwiqt",
+   "x": -6.781251430511475,
+   "y": 0.3127763569355011,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "whw7m0qh329k22bsnzmkz69nd_030.jpg",
+   "panoId": "whw7m0qh329k22bsnzmkz69nd",
+   "panoLabel": "8",
+   "roomId": "9hauvfhwiqt",
+   "x": -6.781251430511475,
+   "y": 0.3127763569355011,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "whw7m0qh329k22bsnzmkz69nd_060.jpg",
+   "panoId": "whw7m0qh329k22bsnzmkz69nd",
+   "panoLabel": "8",
+   "roomId": "9hauvfhwiqt",
+   "x": -6.781251430511475,
+   "y": 0.3127763569355011,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "whw7m0qh329k22bsnzmkz69nd_090.jpg",
+   "panoId": "whw7m0qh329k22bsnzmkz69nd",
+   "panoLabel": "8",
+   "roomId": "9hauvfhwiqt",
+   "x": -6.781251430511475,
+   "y": 0.3127763569355011,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "whw7m0qh329k22bsnzmkz69nd_120.jpg",
+   "panoId": "whw7m0qh329k22bsnzmkz69nd",
+   "panoLabel": "8",
+   "roomId": "9hauvfhwiqt",
+   "x": -6.781251430511475,
+   "y": 0.3127763569355011,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "whw7m0qh329k22bsnzmkz69nd_150.jpg",
+   "panoId": "whw7m0qh329k22bsnzmkz69nd",
+   "panoLabel": "8",
+   "roomId": "9hauvfhwiqt",
+   "x": -6.781251430511475,
+   "y": 0.3127763569355011,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "whw7m0qh329k22bsnzmkz69nd_180.jpg",
+   "panoId": "whw7m0qh329k22bsnzmkz69nd",
+   "panoLabel": "8",
+   "roomId": "9hauvfhwiqt",
+   "x": -6.781251430511475,
+   "y": 0.3127763569355011,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "whw7m0qh329k22bsnzmkz69nd_210.jpg",
+   "panoId": "whw7m0qh329k22bsnzmkz69nd",
+   "panoLabel": "8",
+   "roomId": "9hauvfhwiqt",
+   "x": -6.781251430511475,
+   "y": 0.3127763569355011,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "whw7m0qh329k22bsnzmkz69nd_240.jpg",
+   "panoId": "whw7m0qh329k22bsnzmkz69nd",
+   "panoLabel": "8",
+   "roomId": "9hauvfhwiqt",
+   "x": -6.781251430511475,
+   "y": 0.3127763569355011,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "whw7m0qh329k22bsnzmkz69nd_270.jpg",
+   "panoId": "whw7m0qh329k22bsnzmkz69nd",
+   "panoLabel": "8",
+   "roomId": "9hauvfhwiqt",
+   "x": -6.781251430511475,
+   "y": 0.3127763569355011,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "whw7m0qh329k22bsnzmkz69nd_300.jpg",
+   "panoId": "whw7m0qh329k22bsnzmkz69nd",
+   "panoLabel": "8",
+   "roomId": "9hauvfhwiqt",
+   "x": -6.781251430511475,
+   "y": 0.3127763569355011,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "whw7m0qh329k22bsnzmkz69nd_330.jpg",
+   "panoId": "whw7m0qh329k22bsnzmkz69nd",
+   "panoLabel": "8",
+   "roomId": "9hauvfhwiqt",
+   "x": -6.781251430511475,
+   "y": 0.3127763569355011,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "19g75rmsbnz9hrshfbpynfc0c_000.jpg",
+   "panoId": "19g75rmsbnz9hrshfbpynfc0c",
+   "panoLabel": "16",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.515719890594482,
+   "y": 2.0371484756469727,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "19g75rmsbnz9hrshfbpynfc0c_030.jpg",
+   "panoId": "19g75rmsbnz9hrshfbpynfc0c",
+   "panoLabel": "16",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.515719890594482,
+   "y": 2.0371484756469727,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "19g75rmsbnz9hrshfbpynfc0c_060.jpg",
+   "panoId": "19g75rmsbnz9hrshfbpynfc0c",
+   "panoLabel": "16",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.515719890594482,
+   "y": 2.0371484756469727,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "19g75rmsbnz9hrshfbpynfc0c_090.jpg",
+   "panoId": "19g75rmsbnz9hrshfbpynfc0c",
+   "panoLabel": "16",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.515719890594482,
+   "y": 2.0371484756469727,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "19g75rmsbnz9hrshfbpynfc0c_120.jpg",
+   "panoId": "19g75rmsbnz9hrshfbpynfc0c",
+   "panoLabel": "16",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.515719890594482,
+   "y": 2.0371484756469727,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "19g75rmsbnz9hrshfbpynfc0c_150.jpg",
+   "panoId": "19g75rmsbnz9hrshfbpynfc0c",
+   "panoLabel": "16",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.515719890594482,
+   "y": 2.0371484756469727,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "19g75rmsbnz9hrshfbpynfc0c_180.jpg",
+   "panoId": "19g75rmsbnz9hrshfbpynfc0c",
+   "panoLabel": "16",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.515719890594482,
+   "y": 2.0371484756469727,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "19g75rmsbnz9hrshfbpynfc0c_210.jpg",
+   "panoId": "19g75rmsbnz9hrshfbpynfc0c",
+   "panoLabel": "16",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.515719890594482,
+   "y": 2.0371484756469727,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "19g75rmsbnz9hrshfbpynfc0c_240.jpg",
+   "panoId": "19g75rmsbnz9hrshfbpynfc0c",
+   "panoLabel": "16",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.515719890594482,
+   "y": 2.0371484756469727,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "19g75rmsbnz9hrshfbpynfc0c_270.jpg",
+   "panoId": "19g75rmsbnz9hrshfbpynfc0c",
+   "panoLabel": "16",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.515719890594482,
+   "y": 2.0371484756469727,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "19g75rmsbnz9hrshfbpynfc0c_300.jpg",
+   "panoId": "19g75rmsbnz9hrshfbpynfc0c",
+   "panoLabel": "16",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.515719890594482,
+   "y": 2.0371484756469727,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "19g75rmsbnz9hrshfbpynfc0c_330.jpg",
+   "panoId": "19g75rmsbnz9hrshfbpynfc0c",
+   "panoLabel": "16",
+   "roomId": "cdz3fkt38kae7tapstpt0eaeb",
+   "x": -6.515719890594482,
+   "y": 2.0371484756469727,
+   "panoYaw": 330.0
+  },
+  {
+   "file": "41b9e7kscquqb85y1bp0mazdc_000.jpg",
+   "panoId": "41b9e7kscquqb85y1bp0mazdc",
+   "panoLabel": "5",
+   "roomId": "tt6gm2a0463x9wmnx7rn6gugc",
+   "x": -3.5331709384918213,
+   "y": -0.8613097667694092,
+   "panoYaw": 0.0
+  },
+  {
+   "file": "41b9e7kscquqb85y1bp0mazdc_030.jpg",
+   "panoId": "41b9e7kscquqb85y1bp0mazdc",
+   "panoLabel": "5",
+   "roomId": "tt6gm2a0463x9wmnx7rn6gugc",
+   "x": -3.5331709384918213,
+   "y": -0.8613097667694092,
+   "panoYaw": 30.0
+  },
+  {
+   "file": "41b9e7kscquqb85y1bp0mazdc_060.jpg",
+   "panoId": "41b9e7kscquqb85y1bp0mazdc",
+   "panoLabel": "5",
+   "roomId": "tt6gm2a0463x9wmnx7rn6gugc",
+   "x": -3.5331709384918213,
+   "y": -0.8613097667694092,
+   "panoYaw": 60.0
+  },
+  {
+   "file": "41b9e7kscquqb85y1bp0mazdc_090.jpg",
+   "panoId": "41b9e7kscquqb85y1bp0mazdc",
+   "panoLabel": "5",
+   "roomId": "tt6gm2a0463x9wmnx7rn6gugc",
+   "x": -3.5331709384918213,
+   "y": -0.8613097667694092,
+   "panoYaw": 90.0
+  },
+  {
+   "file": "41b9e7kscquqb85y1bp0mazdc_120.jpg",
+   "panoId": "41b9e7kscquqb85y1bp0mazdc",
+   "panoLabel": "5",
+   "roomId": "tt6gm2a0463x9wmnx7rn6gugc",
+   "x": -3.5331709384918213,
+   "y": -0.8613097667694092,
+   "panoYaw": 120.0
+  },
+  {
+   "file": "41b9e7kscquqb85y1bp0mazdc_150.jpg",
+   "panoId": "41b9e7kscquqb85y1bp0mazdc",
+   "panoLabel": "5",
+   "roomId": "tt6gm2a0463x9wmnx7rn6gugc",
+   "x": -3.5331709384918213,
+   "y": -0.8613097667694092,
+   "panoYaw": 150.0
+  },
+  {
+   "file": "41b9e7kscquqb85y1bp0mazdc_180.jpg",
+   "panoId": "41b9e7kscquqb85y1bp0mazdc",
+   "panoLabel": "5",
+   "roomId": "tt6gm2a0463x9wmnx7rn6gugc",
+   "x": -3.5331709384918213,
+   "y": -0.8613097667694092,
+   "panoYaw": 180.0
+  },
+  {
+   "file": "41b9e7kscquqb85y1bp0mazdc_210.jpg",
+   "panoId": "41b9e7kscquqb85y1bp0mazdc",
+   "panoLabel": "5",
+   "roomId": "tt6gm2a0463x9wmnx7rn6gugc",
+   "x": -3.5331709384918213,
+   "y": -0.8613097667694092,
+   "panoYaw": 210.0
+  },
+  {
+   "file": "41b9e7kscquqb85y1bp0mazdc_240.jpg",
+   "panoId": "41b9e7kscquqb85y1bp0mazdc",
+   "panoLabel": "5",
+   "roomId": "tt6gm2a0463x9wmnx7rn6gugc",
+   "x": -3.5331709384918213,
+   "y": -0.8613097667694092,
+   "panoYaw": 240.0
+  },
+  {
+   "file": "41b9e7kscquqb85y1bp0mazdc_270.jpg",
+   "panoId": "41b9e7kscquqb85y1bp0mazdc",
+   "panoLabel": "5",
+   "roomId": "tt6gm2a0463x9wmnx7rn6gugc",
+   "x": -3.5331709384918213,
+   "y": -0.8613097667694092,
+   "panoYaw": 270.0
+  },
+  {
+   "file": "41b9e7kscquqb85y1bp0mazdc_300.jpg",
+   "panoId": "41b9e7kscquqb85y1bp0mazdc",
+   "panoLabel": "5",
+   "roomId": "tt6gm2a0463x9wmnx7rn6gugc",
+   "x": -3.5331709384918213,
+   "y": -0.8613097667694092,
+   "panoYaw": 300.0
+  },
+  {
+   "file": "41b9e7kscquqb85y1bp0mazdc_330.jpg",
+   "panoId": "41b9e7kscquqb85y1bp0mazdc",
+   "panoLabel": "5",
+   "roomId": "tt6gm2a0463x9wmnx7rn6gugc",
+   "x": -3.5331709384918213,
+   "y": -0.8613097667694092,
+   "panoYaw": 330.0
+  }
+ ],
+ "skipped": []
+}

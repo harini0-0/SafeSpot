@@ -1,10 +1,20 @@
+# macOS
+.DS_Store
 # Xcode
 xcuserdata/
 DerivedData/
 *.xcuserstate
 build/
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
 # Python
 .venv/
+scripts/.venv/
 __pycache__/
 # Secrets
 .env
+# CoStar / Matterport data (read-only). Data may be public, but the downloaded
+# meshes/skyboxes in data/assets and data/fresh are too large for Git; keep them out.
+data/
