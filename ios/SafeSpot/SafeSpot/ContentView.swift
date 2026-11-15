@@ -4,15 +4,15 @@
 import SwiftUI
 
 struct ContentView: View {
-    // Walk = photoreal continuous walkthrough (textured MatterPak mesh), live-tracked;
-    // Photo = 360 photo stills at scan points; Overhead = floor-plan dollhouse.
-    enum Mode: String, CaseIterable { case walk = "Walk", photo = "Photo", overhead = "Overhead" }
-    @State private var mode: Mode = .walk
+    // Tour = Matterport-style hybrid (stand in sharp panorama, glide through the
+    // textured mesh between points); Photo = pano stills; Overhead = dollhouse map.
+    enum Mode: String, CaseIterable { case tour = "Tour", photo = "Photo", overhead = "Overhead" }
+    @State private var mode: Mode = .tour
 
     var body: some View {
         ZStack(alignment: .top) {
             switch mode {
-            case .walk: FirstPersonView()
+            case .tour: HybridTourView()
             case .photo: PanoramaView()
             case .overhead: HouseView()
             }
