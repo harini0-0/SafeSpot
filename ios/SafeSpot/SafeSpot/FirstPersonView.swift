@@ -103,13 +103,21 @@ struct FirstPersonView: View {
         ZStack(alignment: .bottom) {
             RealityView { content in
                 do {
-                    let house = try HouseLoader.loadFromBundle()
-                    let root = HouseSceneBuilder.build(house: house)
-                    HouseSceneBuilder.setCeilingsHidden(true, in: root)
-                    content.add(root)
-                    addLighting(to: content)
+                    let house = try HouseLoader.loadFromBundle()   // graph: collision, arrow, minimap
                     walk.start(in: house)
                     content.add(walk.camera)
+                    addLighting(to: content)
+                    // Photoreal textured house (MatterPak). It's in model coords (Z-up),
+                    // so rotate -90° about X to match our scene space (modelToScene).
+                    if let url = Bundle.main.url(forResource: "house_textured", withExtension: "usdz") {
+                        let model = try await Entity(contentsOf: url)
+                        model.orientation = simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(1, 0, 0))
+                        content.add(model)
+                    } else {
+                        let root = HouseSceneBuilder.build(house: house)   // grey fallback
+                        HouseSceneBuilder.setCeilingsHidden(true, in: root)
+                        content.add(root)
+                    }
                     status = walk.currentRoomLabel()
                 } catch { status = "Load error: \(error.localizedDescription)" }
             }
