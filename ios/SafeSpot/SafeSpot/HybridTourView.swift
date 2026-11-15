@@ -26,6 +26,7 @@ final class TourModel {
     // Per-pano orientation (ported from Photo mode, which renders correctly).
     var headingCalibDeg: Double = 0
     var headingSign: Double = -1
+    var blockedRooms: Set<String> = []   // rooms the route must avoid (damage)
 
     let camera = PerspectiveCamera()
     let sphere = ModelEntity()
@@ -153,7 +154,8 @@ final class TourModel {
         return panos.firstIndex { $0.anchor?.room?.id == room } ?? index
     }
 
-    /// BFS over scan-point neighbours → ordered pano indices from current to target.
+    /// BFS over scan-point neighbours → ordered pano indices from current to target,
+    /// skipping scan points in blocked rooms (a damaged room blocks the whole room).
     func route(to target: Int) -> [Int] {
         let idxOf = Dictionary(uniqueKeysWithValues: panos.enumerated().map { ($0.element.id, $0.offset) })
         var prev = [Int: Int](); var seen = Set([index]); var q = [index]
@@ -162,6 +164,7 @@ final class TourModel {
             if cur == target { break }
             for nid in panos[cur].anchor?.neighbors ?? [] {
                 guard let ni = idxOf[nid], !seen.contains(ni) else { continue }
+                if ni != target, blockedRooms.contains(panos[ni].anchor?.room?.id ?? "") { continue }
                 seen.insert(ni); prev[ni] = cur; q.append(ni)
             }
         }
@@ -169,6 +172,28 @@ final class TourModel {
         var path = [target]; var c = target
         while c != index, let p = prev[c] { path.append(p); c = p }
         return path.reversed()
+    }
+
+    /// Nearest reachable scan point (by neighbour hops, avoiding blocked rooms) whose
+    /// room type is one of `types` — used to pick a safe spot for the scripted demo.
+    func nearestSafePano(from start: Int, avoiding blocked: Set<String>, types: [String]) -> Int? {
+        let idxOf = Dictionary(uniqueKeysWithValues: panos.enumerated().map { ($0.element.id, $0.offset) })
+        var seen = Set([start]); var q = [start]
+        while !q.isEmpty {
+            let cur = q.removeFirst()
+            let room = panos[cur].anchor?.room?.id ?? ""
+            if cur != start, !blocked.contains(room), types.contains(roomTypeById[room] ?? "") { return cur }
+            for nid in panos[cur].anchor?.neighbors ?? [] {
+                guard let ni = idxOf[nid], !seen.contains(ni) else { continue }
+                if blocked.contains(panos[ni].anchor?.room?.id ?? "") { continue }
+                seen.insert(ni); q.append(ni)
+            }
+        }
+        return nil
+    }
+
+    func typeName(_ i: Int) -> String {
+        (roomTypeById[panos[i].anchor?.room?.id ?? ""] ?? "safe room").lowercased()
     }
 }
 
@@ -266,6 +291,7 @@ struct HybridTourView: View {
                         .background(.green.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
                 }
                 HStack(spacing: 10) {
+                    Button { runDemo() } label: { chip("▶︎ Demo", false) }
                     Button { toggleLive() } label: { chip(live ? "📍 Live" : "Virtual", live) }
                     Button { if let m = model { glideBack(m) } } label: { chip("◀", false) }
                     Button { if let m = model, let n = m.forwardIndex() { glide(m, to: n) } } label: { chip("Forward ▶", false) }
@@ -416,6 +442,56 @@ struct HybridTourView: View {
     private func goNextStep(_ m: TourModel) {
         guard let p = plan, let target = p.route.last, target != m.index else { return }
         travel(m, to: target)   // glide the whole route to the safe spot, hop by hop
+    }
+
+    // MARK: scripted demo (deterministic — no sensors, Wi-Fi, or backend)
+
+    /// One-button story: tornado → route to a safe interior room → hallway blocked
+    /// → reroute → arrive. Uses the real house graph and routing, with voice.
+    private func runDemo() {
+        guard let m = model else { return }
+        stopBackend()
+        live = false
+        locate?.stop(); locate = nil
+        m.blockedRooms = []
+        historyStore.removeAll(); pendingRoute = []
+
+        func firstType(_ t: String) -> Int? {
+            m.panos.firstIndex { m.roomTypeById[$0.anchor?.room?.id ?? ""] == t }
+        }
+        let start = firstType("Living Room") ?? firstType("Kitchen") ?? 0
+        let hallway = m.graph.rooms.first { $0.type == "Hallway" }?.id
+
+        Task {
+            // Stage 0 — start + warning.
+            await arrive(m, to: start)
+            let t1 = m.nearestSafePano(from: start, avoiding: [],
+                                       types: ["Bathroom", "Closet", "Bedroom"]) ?? start
+            plan = ("Tornado", m.route(to: t1),
+                    "Tornado warning. Go to the \(m.typeName(t1)) — interior, away from windows.")
+            speak("Tornado warning. Move to the \(m.typeName(t1)). It's interior, away from windows.")
+
+            // Stage 1 — start walking.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { travel(m, to: t1) }
+
+            // Stage 2 — hallway blocked → reroute.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 9) {
+                if let h = hallway { m.blockedRooms.insert(h) }
+                let t2 = m.nearestSafePano(from: m.index, avoiding: m.blockedRooms,
+                                           types: ["Bedroom", "Closet", "Bathroom"]) ?? m.index
+                plan = ("Tornado", m.route(to: t2),
+                        "Hallway reported blocked. Rerouting to the \(m.typeName(t2)).")
+                speak("The hallway is blocked. Rerouting to the \(m.typeName(t2)). Get under a sturdy table and cover your head.")
+                travel(m, to: t2)
+
+                // Stage 3 — arrival.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
+                    plan = ("Tornado", [m.index],
+                            "You're in the safe spot. Get low, cover your head, stay until the all-clear.")
+                    speak("You've reached the safe spot. Get low and cover your head until the all clear.")
+                }
+            }
+        }
     }
 
     private func stopBackend() {
