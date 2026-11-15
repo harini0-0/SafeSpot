@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copy to BackendConfig.plist (gitignored) and set BaseURL to the machine running
+     Lavanya's backend, reachable from the iPhone on the venue Wi-Fi.
+     Find the host's LAN IP with `ipconfig getifaddr en0`, then e.g.:
+         http://192.168.1.23:8000
+     Add BackendConfig.plist to the SafeSpot target so it ships in the app bundle. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>BaseURL</key>
+    <string>http://localhost:8000</string>
+</dict>
+</plist>

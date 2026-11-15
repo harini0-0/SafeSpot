@@ -52,6 +52,7 @@
         "DEVELOPMENT_TEAM": "58C9FKWXL4",
         "ENABLE_PREVIEWS": "YES",
         "GENERATE_INFOPLIST_FILE": "YES",
+        "INFOPLIST_FILE": "Info.plist",
         "INFOPLIST_KEY_NSCameraUsageDescription": "Safe Spot uses the camera to track where you are inside your home so it can guide you to the safest spot.",
         "INFOPLIST_KEY_NSLocationWhenInUseUsageDescription": "Safe Spot uses your location to confirm which building you're in and to check for nearby weather and earthquake alerts.",
         "INFOPLIST_KEY_NSMicrophoneUsageDescription": "Safe Spot uses the microphone so you can ask for directions out loud, like \"Where do I go next?\"",

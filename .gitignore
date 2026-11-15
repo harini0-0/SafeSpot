@@ -18,3 +18,6 @@ __pycache__/
 # CoStar / Matterport data (read-only). Data may be public, but the downloaded
 # meshes/skyboxes in data/assets and data/fresh are too large for Git; keep them out.
 data/
+
+# Backend host (per-machine, not committed)
+ios/SafeSpot/SafeSpot/Backend/BackendConfig.plist

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Partial Info.plist: GENERATE_INFOPLIST_FILE=YES merges the generated keys
+     (permission strings, scene manifest, etc.) on top of this. Here only for
+     App Transport Security: allow cleartext http/ws to the backend on the local
+     network (the laptop running Lavanya's server) during the demo. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
+</dict>
+</plist>

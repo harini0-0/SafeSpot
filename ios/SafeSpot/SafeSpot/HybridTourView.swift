@@ -12,6 +12,7 @@ import SwiftUI
 import RealityKit
 import ARKit
 import Combine
+import AVFoundation
 import SafeSpotCore
 
 @MainActor
@@ -22,6 +23,10 @@ final class TourModel {
     var index = 0
     var yaw: Double = 0            // radians; model heading 0 = +Y, clockwise
     var transitioning = false
+    // Per-pano orientation (ported from Photo mode, which renders correctly).
+    var headingCalibDeg: Double = 0
+    var headingSign: Double = -1
+    var blockedRooms: Set<String> = []   // rooms the route must avoid (damage)
 
     let camera = PerspectiveCamera()
     let sphere = ModelEntity()
@@ -32,9 +37,8 @@ final class TourModel {
         let all = house.model.sections.panoramas?.panoLocations ?? []
         panos = all.sorted { (Int($0.label ?? "") ?? 0) < (Int($1.label ?? "") ?? 0) }
         roomTypeById = Dictionary(uniqueKeysWithValues: house.graph.rooms.map { ($0.id, $0.type) })
-        camera.camera.fieldOfViewInDegrees = 75
-        sphere.components.set(ModelComponent(mesh: .generateSphere(radius: 50), materials: []))
-        sphere.scale = SIMD3<Float>(-1, 1, 1)   // view the texture from the inside
+        camera.camera.fieldOfViewInDegrees = 90   // wider so the room is easy to read
+        sphere.components.set(ModelComponent(mesh: SkySphere.make(radius: 50), materials: []))
     }
 
     var current: Panorama? { panos.indices.contains(index) ? panos[index] : nil }
@@ -49,7 +53,8 @@ final class TourModel {
     func placeAtRest() {
         sphere.position = scenePos(index)
         sphere.isEnabled = true
-        mesh?.isEnabled = false
+        mesh?.isEnabled = false        // the raw mesh looks like clay; pano only
+        alignCurrent()
         updateLook()
     }
 
@@ -59,12 +64,47 @@ final class TourModel {
         camera.look(at: o + fwd, from: o, relativeTo: nil)
     }
 
+    /// Yaw from a model heading, Photo-mode convention (yaw = 90 - heading).
+    func applyHeadingDeg(_ h: Double) { yaw = (90 - h) * .pi / 180; updateLook() }
+
+    func panoYawDeg(_ p: Panorama) -> Double {
+        guard let q = p.rotation else { return 0 }
+        return atan2(q.z, q.w) * 2 * 180 / .pi
+    }
+
+    /// Rotate the sphere so the photo lines up with model directions (Photo mode's
+    /// calibrated fix). Without this each pano is pasted at a random angle (the
+    /// "collaged surfaces" / wrong-facing arrow).
+    func alignCurrent() {
+        guard let p = current else { return }
+        let deg = headingSign * panoYawDeg(p) + headingCalibDeg
+        sphere.orientation = simd_quatf(angle: Float(deg * .pi / 180), axis: SIMD3<Float>(0, 1, 0))
+    }
+
+    /// Which scan point to show in live tracking: locked to the room `locate` reports,
+    /// with hysteresis so position noise near a boundary doesn't flip rooms.
+    func liveTargetIndex(x: Double, y: Double, roomId: String?) -> Int {
+        func d(_ i: Int) -> Double { hypot(panos[i].position.x - x, panos[i].position.y - y) }
+        let margin = 0.8   // metres a candidate must beat the current by to switch
+        let curRoom = panos[index].anchor?.room?.id
+        if let r = roomId, !r.isEmpty {
+            let pool = panos.indices.filter { panos[$0].anchor?.room?.id == r }
+            if let best = pool.min(by: { d($0) < d($1) }) {
+                if r == curRoom { return d(best) + margin < d(index) ? best : index }
+                return best    // locate says we changed rooms → go to that room's nearest
+            }
+        }
+        let best = panos.indices.min(by: { d($0) < d($1) }) ?? index
+        return d(best) + margin < d(index) ? best : index
+    }
+
     func material(for pano: Panorama) async -> UnlitMaterial? {
         guard let url = Bundle.main.url(forResource: pano.id, withExtension: "jpg")
                 ?? Bundle.main.url(forResource: pano.id, withExtension: "jpg", subdirectory: "panoramas"),
               let tex = try? await TextureResource(contentsOf: url) else { return nil }
         var m = UnlitMaterial()
         m.color = .init(tint: .white, texture: .init(tex))
+        m.faceCulling = .none   // seamless sphere viewed from the inside
         return m
     }
 
@@ -114,7 +154,8 @@ final class TourModel {
         return panos.firstIndex { $0.anchor?.room?.id == room } ?? index
     }
 
-    /// BFS over scan-point neighbours → ordered pano indices from current to target.
+    /// BFS over scan-point neighbours → ordered pano indices from current to target,
+    /// skipping scan points in blocked rooms (a damaged room blocks the whole room).
     func route(to target: Int) -> [Int] {
         let idxOf = Dictionary(uniqueKeysWithValues: panos.enumerated().map { ($0.element.id, $0.offset) })
         var prev = [Int: Int](); var seen = Set([index]); var q = [index]
@@ -123,6 +164,7 @@ final class TourModel {
             if cur == target { break }
             for nid in panos[cur].anchor?.neighbors ?? [] {
                 guard let ni = idxOf[nid], !seen.contains(ni) else { continue }
+                if ni != target, blockedRooms.contains(panos[ni].anchor?.room?.id ?? "") { continue }
                 seen.insert(ni); prev[ni] = cur; q.append(ni)
             }
         }
@@ -130,6 +172,28 @@ final class TourModel {
         var path = [target]; var c = target
         while c != index, let p = prev[c] { path.append(p); c = p }
         return path.reversed()
+    }
+
+    /// Nearest reachable scan point (by neighbour hops, avoiding blocked rooms) whose
+    /// room type is one of `types` — used to pick a safe spot for the scripted demo.
+    func nearestSafePano(from start: Int, avoiding blocked: Set<String>, types: [String]) -> Int? {
+        let idxOf = Dictionary(uniqueKeysWithValues: panos.enumerated().map { ($0.element.id, $0.offset) })
+        var seen = Set([start]); var q = [start]
+        while !q.isEmpty {
+            let cur = q.removeFirst()
+            let room = panos[cur].anchor?.room?.id ?? ""
+            if cur != start, !blocked.contains(room), types.contains(roomTypeById[room] ?? "") { return cur }
+            for nid in panos[cur].anchor?.neighbors ?? [] {
+                guard let ni = idxOf[nid], !seen.contains(ni) else { continue }
+                if blocked.contains(panos[ni].anchor?.room?.id ?? "") { continue }
+                seen.insert(ni); q.append(ni)
+            }
+        }
+        return nil
+    }
+
+    func typeName(_ i: Int) -> String {
+        (roomTypeById[panos[i].anchor?.room?.id ?? ""] ?? "safe room").lowercased()
     }
 }
 
@@ -142,6 +206,13 @@ struct HybridTourView: View {
     @State private var live = false
     @State private var locate: LocateSession?
     @State private var tickN = 0
+    @State private var pendingRoute: [Int] = []
+    // Earthquake is driven by Lavanya's backend (take cover while shaking → exit after).
+    @State private var planChannel: PlanChannel?
+    @State private var backendPlan: Plan?
+    @State private var takeCover = false
+    @State private var speaker = AVSpeechSynthesizer()
+    @State private var voice = VoiceAsk()
     private let hazards = ["Tornado", "Earthquake", "Fire"]
     private let tick = Timer.publish(every: 1.0 / 20.0, on: .main, in: .common).autoconnect()
 
@@ -175,6 +246,18 @@ struct HybridTourView: View {
             }
             Color.black.opacity(fade).ignoresSafeArea().allowsHitTesting(false)
 
+            if takeCover {
+                VStack(spacing: 10) {
+                    Image(systemName: "figure.fall").font(.system(size: 54, weight: .bold))
+                    Text("TAKE COVER").font(.largeTitle.bold())
+                    Text("Drop, cover, hold on. Don't run.").font(.title3)
+                }
+                .foregroundStyle(.white).padding(28)
+                .background(.red.opacity(0.78), in: RoundedRectangle(cornerRadius: 20))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .allowsHitTesting(false)
+            }
+
             if live, let s = locate, s.mode != .tracking {
                 Text(s.mode == .tapHere ? "Tap the map where you are" : "Tap the map toward where you face")
                     .font(.title3.bold()).foregroundStyle(.white).padding(20)
@@ -187,8 +270,8 @@ struct HybridTourView: View {
                     HStack {
                         Spacer()
                         Minimap(graph: m.graph, panos: m.panos, currentIndex: m.index,
-                                route: plan?.route ?? [],
-                                onSelect: { i in if !live { glide(m, to: i) } },
+                                route: plan?.route ?? [], headingRad: m.yaw,
+                                onSelect: { i in if !live { travel(m, to: i) } },
                                 onTapModel: live ? { p in locate?.tap(p) } : nil)
                         .frame(width: 180, height: 140).padding(8)
                         .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 10))
@@ -208,6 +291,7 @@ struct HybridTourView: View {
                         .background(.green.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
                 }
                 HStack(spacing: 10) {
+                    Button { runDemo() } label: { chip("▶︎ Demo", false) }
                     Button { toggleLive() } label: { chip(live ? "📍 Live" : "Virtual", live) }
                     Button { if let m = model { glideBack(m) } } label: { chip("◀", false) }
                     Button { if let m = model, let n = m.forwardIndex() { glide(m, to: n) } } label: { chip("Forward ▶", false) }
@@ -218,14 +302,23 @@ struct HybridTourView: View {
                     }
                     if plan != nil { Button { if let m = model { goNextStep(m) } } label: { chip("Go ▶", false) } }
                 }
+                if plan != nil {
+                    HStack(spacing: 8) {
+                        Button { reportBlockedHere() } label: { chip("⚠︎ Blocked here", false) }
+                        Button { voice.toggle() } label: {
+                            chip(voice.listening ? "🎤 Listening…" : "🎤 Ask", voice.listening)
+                        }
+                    }
+                }
             }
             .padding(.bottom, 36)
         }
+        .onAppear { configureVoice() }
         .onReceive(tick) { _ in
             guard live, let m = model, let s = locate, let pos = s.position, !m.transitioning else { return }
-            m.yaw = pos.heading * .pi / 180
-            let ni = m.nearestPanoIndex(x: pos.x, y: pos.y)
-            if ni != m.index { glide(m, to: ni) } else { m.updateLook() }
+            m.applyHeadingDeg(pos.heading)   // continuous look (Photo-mode convention)
+            let ni = m.liveTargetIndex(x: pos.x, y: pos.y, roomId: pos.roomId)
+            if ni != m.index { liveJump(m, to: ni) }
             tickN &+= 1
         }
     }
@@ -246,34 +339,41 @@ struct HybridTourView: View {
 
     // MARK: transitions
 
+    /// Travel to any scan point by gliding hop-by-hop along connected neighbours
+    /// (so the camera never cuts straight through a wall).
+    private func travel(_ m: TourModel, to target: Int) {
+        guard !m.transitioning, target != m.index else { return }
+        let r = m.route(to: target)
+        guard r.count >= 2 else { return }
+        pendingRoute = Array(r.dropFirst())   // drop current
+        advancePending(m)
+    }
+
+    private func advancePending(_ m: TourModel) {
+        guard let next = pendingRoute.first else { return }
+        glide(m, to: next)
+    }
+
+    /// Move to a scan point as a quick fade-cut between panoramas (the textured mesh
+    /// in between looked like clay, so we don't show it).
     private func glide(_ m: TourModel, to target: Int) {
         guard !m.transitioning, target != m.index, m.panos.indices.contains(target) else { return }
         m.transitioning = true
         historyStore.append(m.index)
-        let from = m.scenePos(m.index), to = m.scenePos(target)
-        m.sphere.isEnabled = false
-        m.mesh?.isEnabled = true
-        // Face the target and dolly there through the mesh.
-        m.camera.look(at: to, from: from, relativeTo: nil)
-        var t = m.camera.transform; t.translation = to
-        m.camera.move(to: t, relativeTo: nil, duration: 0.55, timingFunction: .easeInOut)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-            Task { await arrive(m, to: target) }
-        }
+        Task { await arrive(m, to: target) }
     }
 
     private func glideBack(_ m: TourModel) {
         guard !m.transitioning, let prev = historyStore.popLast() else { return }
-        // temporary: don't double-push history on back
         m.transitioning = true
-        let from = m.scenePos(m.index), to = m.scenePos(prev)
-        m.sphere.isEnabled = false; m.mesh?.isEnabled = true
-        m.camera.look(at: to, from: from, relativeTo: nil)
-        var t = m.camera.transform; t.translation = to
-        m.camera.move(to: t, relativeTo: nil, duration: 0.55, timingFunction: .easeInOut)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-            Task { await arrive(m, to: prev) }
-        }
+        Task { await arrive(m, to: prev) }
+    }
+
+    /// Live tracking: teleport straight to the room-locked scan point (no route glide).
+    private func liveJump(_ m: TourModel, to target: Int) {
+        guard !m.transitioning, target != m.index, m.panos.indices.contains(target) else { return }
+        m.transitioning = true
+        Task { await arrive(m, to: target) }
     }
 
     private func arrive(_ m: TourModel, to target: Int) async {
@@ -286,12 +386,46 @@ struct HybridTourView: View {
         withAnimation(.easeOut(duration: 0.3)) { fade = 0 }
         m.transitioning = false
         status = m.current.map { m.roomLabel($0) } ?? "—"
+        // Continue a multi-hop route (minimap tap / hazard Go), one neighbour at a time.
+        if !pendingRoute.isEmpty, pendingRoute.first == target {
+            pendingRoute.removeFirst()
+            if !pendingRoute.isEmpty {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { advancePending(m) }
+            }
+        }
     }
 
     // MARK: hazard guidance
 
+    /// Any hazard button → the backend planner/router (POST /plan), then a /ws/plan
+    /// subscription for live re-plans (room blocked, shaking stops). Earthquake also
+    /// streams this phone's motion. Falls back to a local plan if the backend is
+    /// unreachable, so the demo still runs offline.
     private func startHazard(_ h: String) {
         guard let m = model else { return }
+        stopBackend()
+        let hazardKey = h.lowercased()
+        if h == "Earthquake" { SensorStreamer.shared.start() }
+        let client = BackendClient()
+        Task {
+            if let pos = currentPosition(m),
+               let p = try? await client.requestPlan(position: pos, hazard: hazardKey) {
+                applyBackendPlan(m, p)
+            } else {
+                localFallback(m, h)
+            }
+        }
+        // position is read fresh on each poll so a reconnect re-plans from where the
+        // user actually is.
+        let ch = PlanChannel(client: client, hazard: hazardKey,
+                             position: { currentPosition(m) },
+                             onPlan: { p in applyBackendPlan(m, p) })
+        ch.start()
+        planChannel = ch
+    }
+
+    /// Local stand-in used only when the backend can't be reached.
+    private func localFallback(_ m: TourModel, _ h: String) {
         let target = m.safeTargetIndex(for: h)
         let r = (h == "Earthquake") ? [m.index] : m.route(to: target)
         let name = m.roomTypeById[m.panos[target].anchor?.room?.id ?? ""] ?? "safe room"
@@ -299,14 +433,147 @@ struct HybridTourView: View {
         switch h {
         case "Tornado": instr = "Tornado — go to the \(name) (interior, no windows). Get under cover."
         case "Fire": instr = "Fire — head to the \(name) and out the exterior door."
-        default: instr = "Earthquake — take cover here now; move after the shaking stops."
+        default: takeCover = true; instr = "Earthquake — take cover here now; move after the shaking stops."
         }
         plan = (h, r, instr)
+        if h != "Earthquake", target != m.index { travel(m, to: target) }
     }
 
     private func goNextStep(_ m: TourModel) {
-        guard let p = plan, let pos = p.route.firstIndex(of: m.index), pos + 1 < p.route.count else { return }
-        glide(m, to: p.route[pos + 1])
+        guard let p = plan, let target = p.route.last, target != m.index else { return }
+        travel(m, to: target)   // glide the whole route to the safe spot, hop by hop
+    }
+
+    // MARK: scripted demo (deterministic — no sensors, Wi-Fi, or backend)
+
+    /// One-button story: tornado → route to a safe interior room → hallway blocked
+    /// → reroute → arrive. Uses the real house graph and routing, with voice.
+    private func runDemo() {
+        guard let m = model else { return }
+        stopBackend()
+        live = false
+        locate?.stop(); locate = nil
+        m.blockedRooms = []
+        historyStore.removeAll(); pendingRoute = []
+
+        func firstType(_ t: String) -> Int? {
+            m.panos.firstIndex { m.roomTypeById[$0.anchor?.room?.id ?? ""] == t }
+        }
+        let start = firstType("Living Room") ?? firstType("Kitchen") ?? 0
+        let hallway = m.graph.rooms.first { $0.type == "Hallway" }?.id
+
+        Task {
+            // Stage 0 — start + warning.
+            await arrive(m, to: start)
+            let t1 = m.nearestSafePano(from: start, avoiding: [],
+                                       types: ["Bathroom", "Closet", "Bedroom"]) ?? start
+            plan = ("Tornado", m.route(to: t1),
+                    "Tornado warning. Go to the \(m.typeName(t1)) — interior, away from windows.")
+            speak("Tornado warning. Move to the \(m.typeName(t1)). It's interior, away from windows.")
+
+            // Stage 1 — start walking (after the warning finishes).
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) { travel(m, to: t1) }
+
+            // Stage 2 — hallway blocked → reroute (after the first walk + a pause).
+            DispatchQueue.main.asyncAfter(deadline: .now() + 18) {
+                if let h = hallway { m.blockedRooms.insert(h) }
+                let t2 = m.nearestSafePano(from: m.index, avoiding: m.blockedRooms,
+                                           types: ["Bedroom", "Closet", "Bathroom"]) ?? m.index
+                plan = ("Tornado", m.route(to: t2),
+                        "Hallway reported blocked. Rerouting to the \(m.typeName(t2)).")
+                speak("The hallway is blocked. Rerouting to the \(m.typeName(t2)). Get under a sturdy table and cover your head.")
+                travel(m, to: t2)
+
+                // Stage 3 — arrival.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+                    plan = ("Tornado", [m.index],
+                            "You're in the safe spot. Get low, cover your head, stay until the all-clear.")
+                    speak("You've reached the safe spot. Get low and cover your head until the all clear.")
+                }
+            }
+        }
+    }
+
+    private func stopBackend() {
+        planChannel?.stop(); planChannel = nil
+        SensorStreamer.shared.stop()
+        backendPlan = nil
+        takeCover = false
+    }
+
+    // MARK: one-tap damage report → reroute (/report)
+
+    /// "Blocked here" — mark the current room blocked. The backend re-plans and the
+    /// new route arrives inline and over /ws/plan (CLAUDE.md: a damaged room blocks
+    /// the whole room; the route avoids it).
+    private func reportBlockedHere() {
+        guard let m = model, let room = m.current?.anchor?.room?.id, plan != nil else { return }
+        let event = DamageEvent(roomId: room, state: "blocked", source: "tap",
+                                confidence: 1.0, timestamp: Position.now())
+        Task {
+            if let replan = try? await BackendClient().report(event) { applyBackendPlan(m, replan) }
+        }
+    }
+
+    // MARK: voice Q&A (/voice)
+
+    private func configureVoice() {
+        voice.onResult = { q in
+            Task {
+                if let answer = try? await BackendClient().ask(q) { speak(answer) }
+            }
+        }
+    }
+
+    // MARK: render a backend Plan (CLAUDE.md rule 5: no running during shaking).
+
+    private func applyBackendPlan(_ m: TourModel, _ p: Plan) {
+        backendPlan = p
+        takeCover = p.takeCover
+        let label = p.hazard.capitalized   // "Tornado" / "Earthquake" / "Fire"
+        if p.takeCover {
+            plan = (label, [m.index],
+                    p.reasons.first ?? "Take cover here now — drop, cover, hold on. Don't run.")
+            speak(p.reasons.first ?? "Take cover now. Drop, cover, and hold on. Do not run.")
+        } else {
+            let target = backendTargetIndex(m, p) ?? m.index
+            let r = m.route(to: target)
+            plan = (label, r,
+                    p.reasons.first ?? "Move to the \(m.roomTypeById[m.panos[target].anchor?.room?.id ?? ""] ?? "safe spot") now.")
+            speak(p.reasons.first ?? "Move to safety now.")
+            if target != m.index { travel(m, to: target) }   // walk the route automatically
+        }
+    }
+
+    /// Map the backend's target/waypoints onto a scan point. Validates against the
+    /// house data (CLAUDE.md rule 3): an unknown room id falls back to coordinates,
+    /// then to the last waypoint.
+    private func backendTargetIndex(_ m: TourModel, _ p: Plan) -> Int? {
+        if let t = p.target {
+            if t.kind == "room", let rid = t.roomId,
+               let i = m.panos.firstIndex(where: { $0.anchor?.room?.id == rid }) { return i }
+            if let x = t.x, let y = t.y { return m.nearestPanoIndex(x: x, y: y) }
+        }
+        if let wp = p.waypoints.last { return m.nearestPanoIndex(x: wp.x, y: wp.y) }
+        return nil
+    }
+
+    /// The live Position to send the backend: from `locate` when tracking, otherwise
+    /// the current scan point and look direction.
+    private func currentPosition(_ m: TourModel) -> Position? {
+        if live, let p = locate?.position { return p }
+        guard let pano = m.current else { return nil }
+        var hdg = m.yaw * 180 / .pi
+        hdg = hdg.truncatingRemainder(dividingBy: 360); if hdg < 0 { hdg += 360 }
+        return Position(roomId: pano.anchor?.room?.id, x: pano.position.x, y: pano.position.y,
+                        heading: hdg, confidence: 0.6, source: .tap, timestamp: Position.now())
+    }
+
+    private func speak(_ text: String) {
+        speaker.stopSpeaking(at: .immediate)
+        let u = AVSpeechUtterance(string: text)
+        u.rate = 0.5
+        speaker.speak(u)
     }
 
     private func toggleLive() {
